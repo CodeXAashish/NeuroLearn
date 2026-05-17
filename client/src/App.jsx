@@ -1,16 +1,27 @@
+import { Routes, Route } from "react-router-dom"
+
+import Login from "./pages/Login"
+import Register from "./pages/Register"
+import Dashboard from "./pages/Dashboard"
+
+import ProtectedRoute from "./components/ProtectedRoute"
 
 function App() {
   return (
-    <div className="h-screen bg-black text-white flex flex-col items-center justify-center ">
-      <h1 className="text-5xl font-bold">
-            NeuroLearn
-      </h1>
+    <Routes>
+      <Route path="/" element={<Login />} />
 
-      <h3 className="text-2xl mt-4">
-             AI Powered Adaptive Learning System
-      </h3>
-      
-    </div>
+      <Route path="/register" element={<Register />} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   )
 }
 

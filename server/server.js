@@ -6,6 +6,8 @@ const connectDB = require("./config/db")
 
 const authRoutes = require("./routes/authRoutes")
 
+const syllabusRoutes = require("./routes/syllabusRoutes")
+
 const app = express()
 connectDB()
 
@@ -13,6 +15,8 @@ app.use(cors())
 app.use(express.json())
 
 app.use("/api/auth", authRoutes)
+
+app.use("/api/syllabus", syllabusRoutes)
 
 app.get("/", (req, res) => {
   res.send("NeuroLearn API Running...")
