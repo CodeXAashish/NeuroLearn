@@ -1,6 +1,7 @@
+require("dotenv").config()
 const express = require("express")
 const cors = require("cors")
-require("dotenv").config()
+
 
 const connectDB = require("./config/db")
 
@@ -9,6 +10,7 @@ const authRoutes = require("./routes/authRoutes")
 const syllabusRoutes = require("./routes/syllabusRoutes")
 
 const quizRoutes = require("./routes/quizRoutes")
+const chatRoutes = require("./routes/chatRoutes")
 
 const app = express()
 connectDB()
@@ -21,6 +23,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/syllabus", syllabusRoutes)
 
 app.use("/api/quiz", quizRoutes)
+app.use("/api/chat", chatRoutes)
 
 app.get("/", (req, res) => {
   res.send("NeuroLearn API Running...")
