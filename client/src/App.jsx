@@ -5,6 +5,8 @@ import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
 
 import ProtectedRoute from "./components/ProtectedRoute"
+import Quiz from "./pages/Quiz"
+import Chat from "./pages/Chat"
 
 function App() {
   return (
@@ -20,7 +22,17 @@ function App() {
             <Dashboard />
           </ProtectedRoute>
         }
+        
       />
+         <Route
+         path="/quiz"
+         element={<Quiz />}
+        />
+
+        <Route
+         path="/chat"
+         element={<Chat />}
+        />
     </Routes>
   )
 }
