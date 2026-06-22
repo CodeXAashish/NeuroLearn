@@ -11,6 +11,8 @@ const syllabusRoutes = require("./routes/syllabusRoutes")
 
 const quizRoutes = require("./routes/quizRoutes")
 const chatRoutes = require("./routes/chatRoutes")
+const mistakeRoutes = require("./routes/mistakeRoutes")
+
 
 const app = express()
 connectDB()
@@ -24,6 +26,8 @@ app.use("/api/syllabus", syllabusRoutes)
 
 app.use("/api/quiz", quizRoutes)
 app.use("/api/chat", chatRoutes)
+app.use("/api/mistakes", mistakeRoutes)
+
 
 app.get("/", (req, res) => {
   res.send("NeuroLearn API Running...")
