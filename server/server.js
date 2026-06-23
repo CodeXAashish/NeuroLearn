@@ -12,6 +12,7 @@ const syllabusRoutes = require("./routes/syllabusRoutes")
 const quizRoutes = require("./routes/quizRoutes")
 const chatRoutes = require("./routes/chatRoutes")
 const mistakeRoutes = require("./routes/mistakeRoutes")
+const analyticsRoutes = require("./routes/analyticsRoutes")
 
 
 const app = express()
@@ -27,6 +28,7 @@ app.use("/api/syllabus", syllabusRoutes)
 app.use("/api/quiz", quizRoutes)
 app.use("/api/chat", chatRoutes)
 app.use("/api/mistakes", mistakeRoutes)
+app.use("/api/analytics",analyticsRoutes)
 
 
 app.get("/", (req, res) => {
