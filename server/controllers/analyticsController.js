@@ -33,7 +33,9 @@ const getDashboardAnalytics = async (
       await Mistake.aggregate([
         {
           $group: {
-            _id: "$topic",
+            _id: {
+                $toUpper: "$topic",
+            },
             count: {
               $sum: 1,
             },

@@ -9,10 +9,13 @@ const saveMistake = async (req, res) => {
       userAnswer,
       correctAnswer,
     } = req.body
+    const normalizedTopic =
+    topic.trim().toUpperCase()
+
 
     const mistake = await Mistake.create({
       user,
-      topic,
+      topic: normalizedTopic,
       question,
       userAnswer,
       correctAnswer,

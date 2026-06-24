@@ -1,3 +1,12 @@
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"
+
 import { useEffect, useState } from "react"
 
 import {
@@ -31,6 +40,13 @@ function Dashboard() {
       </div>
     )
   }
+  const chartData =
+  analytics.weakTopics.map(
+    (topic) => ({
+      topic: topic._id,
+      mistakes: topic.count,
+    })
+  )
 
   return (
     <div className="min-h-screen bg-black text-white p-8">
@@ -87,6 +103,32 @@ function Dashboard() {
             </div>
           )
         )}
+      </div>
+       {/* Weak Topics Chart */}
+
+      <div className="bg-zinc-900 p-6 rounded-xl mt-8">
+        <h2 className="text-2xl font-semibold mb-4">
+          Weak Topics Chart
+        </h2>
+
+        <div
+          style={{
+            width: "100%",
+            height: 300,
+          }}
+        >
+          <ResponsiveContainer>
+            <BarChart data={chartData}>
+              <XAxis dataKey="topic" />
+              <YAxis />
+              <Tooltip />
+              <Bar
+                dataKey="mistakes"
+                fill="#3b82f6"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )
