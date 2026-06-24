@@ -1,4 +1,5 @@
 import { useState } from "react"
+import axios from "axios"
 
 import { generateQuiz } from "../services/quizService"
 
@@ -7,7 +8,13 @@ function Quiz() {
   const [difficulty, setDifficulty] =
     useState("easy")
 
-  const [quiz, setQuiz] = useState("")
+  const [quiz, setQuiz] = useState([])
+
+  const [answers, setAnswers] =
+    useState({})
+
+  const [result, setResult] =
+    useState(null)
 
   const [loading, setLoading] =
     useState(false)
@@ -16,20 +23,55 @@ function Quiz() {
     try {
       setLoading(true)
 
-      const data = await generateQuiz({
-        topic,
-        difficulty,
-      })
+      const data =
+        await generateQuiz({
+          topic,
+          difficulty,
+        })
 
       setQuiz(data.quiz)
+
+      setAnswers({})
+      setResult(null)
 
       setLoading(false)
     } catch (error) {
       console.log(error)
-
       setLoading(false)
     }
   }
+
+  const handleSubmitQuiz =
+    async () => {
+      try {
+        const payload = {
+          topic,
+
+          answers: quiz.map(
+            (q, index) => ({
+              question:
+                q.question,
+
+              userAnswer:
+                answers[index],
+
+              correctAnswer:
+                q.correctAnswer,
+            })
+          ),
+        }
+
+        const response =
+          await axios.post(
+            "http://localhost:5000/api/quiz/submit",
+            payload
+          )
+
+        setResult(response.data)
+      } catch (error) {
+        console.log(error)
+      }
+    }
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
@@ -51,7 +93,9 @@ function Quiz() {
         <select
           value={difficulty}
           onChange={(e) =>
-            setDifficulty(e.target.value)
+            setDifficulty(
+              e.target.value
+            )
           }
           className="w-full p-3 rounded bg-zinc-900"
         >
@@ -69,7 +113,9 @@ function Quiz() {
         </select>
 
         <button
-          onClick={handleGenerateQuiz}
+          onClick={
+            handleGenerateQuiz
+          }
           className="bg-blue-600 px-6 py-3 rounded"
         >
           {loading
@@ -78,9 +124,81 @@ function Quiz() {
         </button>
       </div>
 
-      <div className="mt-10 whitespace-pre-wrap bg-zinc-900 p-6 rounded-xl">
-        {quiz}
+      {/* Questions */}
+
+      <div className="mt-10">
+        {quiz.map(
+          (q, index) => (
+            <div
+              key={index}
+              className="bg-zinc-900 p-6 rounded-xl mb-4"
+            >
+              <h3 className="font-bold mb-4">
+                {index + 1}.{" "}
+                {q.question}
+              </h3>
+
+              {q.options.map(
+                (option) => (
+                  <label
+                    key={option}
+                    className="block mb-2"
+                  >
+                    <input
+                      type="radio"
+                      name={`question-${index}`}
+                      value={
+                        option
+                      }
+                      onChange={() =>
+                        setAnswers({
+                          ...answers,
+
+                          [index]:
+                            option,
+                        })
+                      }
+                    />
+
+                    <span className="ml-2">
+                      {option}
+                    </span>
+                  </label>
+                )
+              )}
+            </div>
+          )
+        )}
       </div>
+
+      {/* Submit Button */}
+
+      {quiz.length > 0 && (
+        <button
+          onClick={
+            handleSubmitQuiz
+          }
+          className="bg-green-600 px-6 py-3 rounded mt-4"
+        >
+          Submit Quiz
+        </button>
+      )}
+
+      {/* Result */}
+
+      {result && (
+        <div className="bg-zinc-900 p-6 rounded-xl mt-6">
+          <h2 className="text-2xl font-bold">
+            Score:
+            {" "}
+            {result.score}
+            {" / "}
+            {
+              result.totalQuestions
+            }
+          </h2>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,7 +1,6 @@
 const mongoose = require("mongoose")
 
-const quizAttemptSchema =
-  new mongoose.Schema(
+const quizAttemptSchema = new mongoose.Schema(
     {
       user: {
         type: mongoose.Schema.Types.ObjectId,
