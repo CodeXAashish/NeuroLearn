@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Quiz from "./pages/Quiz"
 import Chat from "./pages/Chat"
+import Planner from "./pages/Planner"
 
 function App() {
   return (
@@ -32,6 +33,10 @@ function App() {
         <Route
          path="/chat"
          element={<Chat />}
+        />
+         <Route
+          path="/planner"
+          element={<Planner />}
         />
     </Routes>
   )
