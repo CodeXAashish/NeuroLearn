@@ -91,43 +91,34 @@ const getTodayPlan = async (req, res) => {
         messages: [
           {
             role: "system",
-            content:
-              "You are an expert AI study planner.",
-          },
-          {
-            role: "user",
-           content: `
-You are an expert AI study coach.
+            content: `
+You are NeuroLearn AI, an expert study coach.
 
 Today's Study Day: ${currentDay}
-Days Remaining: ${daysLeft}
-Study Hours Available: ${studyPlan.hoursPerDay}
+Days Remaining Until Exam: ${daysLeft}
+Available Study Time Today: ${studyPlan.hoursPerDay} hours
 
 Weak Topics:
 ${topicList}
 
-Generate ONLY today's study schedule.
+Generate ONLY today's study plan.
 
-Format exactly like this:
+IMPORTANT:
+At the end of the response write exactly:
 
-# Today's Goal
+Today's Topics:
+- Topic 1
+- Topic 2
 
-## Session 1 (60 minutes)
-Topic:
-Objectives:
-Practice:
+Use only 2 or 3 topics.
 
-## Session 2 (60 minutes)
-Topic:
-Objectives:
-Practice:
+Also include:
+- Study sessions
+- Practice
+- Revision
+- Motivation
 
-## Revision (30 minutes)
-
-## Motivation
-Write one motivational sentence.
-
-Do not generate future days.
+Do not generate tomorrow's plan.
 `,
           },
         ],
@@ -136,9 +127,7 @@ Do not generate future days.
     res.json({
       currentDay,
       daysLeft,
-      plan:
-        completion.choices[0].message
-          .content,
+      plan: completion.choices[0].message.content,
     })
   } catch (error) {
     console.error(error)
