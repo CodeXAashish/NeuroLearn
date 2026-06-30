@@ -18,3 +18,19 @@ export const getTodayPlan = async () => {
 
   return response.data
 }
+
+export const completeTodayPlan = async () => {
+  const response = await axios.post(
+    `${API}/complete`
+  )
+
+  return response.data
+}
+
+export const getProgress = async () => {
+  const response = await axios.get(
+    `${API}/progress`
+  )
+
+  return response.data
+}

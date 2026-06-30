@@ -1,9 +1,12 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import axios from "axios"
 
 import { generateQuiz } from "../services/quizService"
 
 function Quiz() {
+  const location = useLocation()
+
   const [topic, setTopic] = useState("")
   const [difficulty, setDifficulty] =
     useState("easy")
@@ -19,27 +22,34 @@ function Quiz() {
   const [loading, setLoading] =
     useState(false)
 
-  const handleGenerateQuiz = async () => {
-    try {
-      setLoading(true)
-
-      const data =
-        await generateQuiz({
-          topic,
-          difficulty,
-        })
-
-      setQuiz(data.quiz)
-
-      setAnswers({})
-      setResult(null)
-
-      setLoading(false)
-    } catch (error) {
-      console.log(error)
-      setLoading(false)
+  // Automatically fill topic if coming from Planner
+  useEffect(() => {
+    if (location.state?.topic) {
+      setTopic(location.state.topic)
     }
-  }
+  }, [location])
+
+  const handleGenerateQuiz =
+    async () => {
+      try {
+        setLoading(true)
+
+        const data =
+          await generateQuiz({
+            topic,
+            difficulty,
+          })
+
+        setQuiz(data.quiz)
+        setAnswers({})
+        setResult(null)
+
+        setLoading(false)
+      } catch (error) {
+        console.log(error)
+        setLoading(false)
+      }
+    }
 
   const handleSubmitQuiz =
     async () => {
@@ -75,11 +85,15 @@ function Quiz() {
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
+
       <h1 className="text-4xl font-bold mb-8">
         AI Quiz Generator 🚀
       </h1>
 
+      {/* Topic */}
+
       <div className="max-w-xl space-y-4">
+
         <input
           type="text"
           placeholder="Enter Topic"
@@ -122,27 +136,29 @@ function Quiz() {
             ? "Generating..."
             : "Generate Quiz"}
         </button>
+
       </div>
 
       {/* Questions */}
 
       <div className="mt-10">
+
         {quiz.map(
           (q, index) => (
             <div
               key={index}
-              className="bg-zinc-900 p-6 rounded-xl mb-4"
+              className="bg-zinc-900 p-6 rounded-xl mb-6"
             >
-              <h3 className="font-bold mb-4">
+              <h2 className="font-bold text-lg mb-4">
                 {index + 1}.{" "}
                 {q.question}
-              </h3>
+              </h2>
 
               {q.options.map(
                 (option) => (
                   <label
                     key={option}
-                    className="block mb-2"
+                    className="block mb-2 cursor-pointer"
                   >
                     <input
                       type="radio"
@@ -150,10 +166,13 @@ function Quiz() {
                       value={
                         option
                       }
+                      checked={
+                        answers[index] ===
+                        option
+                      }
                       onChange={() =>
                         setAnswers({
                           ...answers,
-
                           [index]:
                             option,
                         })
@@ -169,16 +188,17 @@ function Quiz() {
             </div>
           )
         )}
+
       </div>
 
-      {/* Submit Button */}
+      {/* Submit */}
 
       {quiz.length > 0 && (
         <button
           onClick={
             handleSubmitQuiz
           }
-          className="bg-green-600 px-6 py-3 rounded mt-4"
+          className="bg-green-600 px-6 py-3 rounded"
         >
           Submit Quiz
         </button>
@@ -187,9 +207,9 @@ function Quiz() {
       {/* Result */}
 
       {result && (
-        <div className="bg-zinc-900 p-6 rounded-xl mt-6">
+        <div className="bg-zinc-900 p-6 rounded-xl mt-8">
           <h2 className="text-2xl font-bold">
-            Score:
+            🎉 Score:
             {" "}
             {result.score}
             {" / "}
@@ -199,6 +219,7 @@ function Quiz() {
           </h2>
         </div>
       )}
+
     </div>
   )
 }

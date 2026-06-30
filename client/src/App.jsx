@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Quiz from "./pages/Quiz"
 import Chat from "./pages/Chat"
 import Planner from "./pages/Planner"
+import Notes from "./pages/Notes"
 
 function App() {
   return (
@@ -16,28 +17,23 @@ function App() {
 
       <Route path="/register" element={<Register />} />
 
-      <Route
-        path="/dashboard"
-        element={
+      <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
-        }
-        
+        } 
       />
-         <Route
-         path="/quiz"
-         element={<Quiz />}
-        />
 
-        <Route
-         path="/chat"
-         element={<Chat />}
-        />
-         <Route
-          path="/planner"
-          element={<Planner />}
-        />
+         <Route path="/quiz" element={<Quiz />} />
+
+        <Route path="/chat" element={<Chat />} />
+
+         <Route path="/planner" element={<Planner />} />
+
+         <Route path = "/notes" element = {<Notes/>}/>
+
+        
+
     </Routes>
   )
 }
