@@ -183,12 +183,14 @@ function Planner() {
         <button
           disabled={!selectedTopic}
           onClick={() =>
-            navigate("/quiz", {
-              state: {
-                topic: selectedTopic,
-              },
-            })
-          }
+           navigate("/quiz", {
+             state: {
+            topic: selectedTopic,
+            difficulty: todayPlan.difficulty,
+            source: "planner",
+          },
+          })
+        }
           className="bg-green-600 px-6 py-3 rounded disabled:opacity-50 disabled:cursor-not-allowed"
         >
           🚀 Generate Quiz

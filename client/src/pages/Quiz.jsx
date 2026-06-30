@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react"
 import { useLocation } from "react-router-dom"
 import axios from "axios"
-
 import { generateQuiz } from "../services/quizService"
+import { useNavigate} from "react-router-dom"
 
 function Quiz() {
   const location = useLocation()
@@ -13,31 +13,64 @@ function Quiz() {
 
   const [quiz, setQuiz] = useState([])
 
-  const [answers, setAnswers] =
-    useState({})
+  const [answers, setAnswers] = useState({})
 
-  const [result, setResult] =
-    useState(null)
+  const [result, setResult] = useState(null)
 
-  const [loading, setLoading] =
-    useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const navigate = useNavigate()
+  
+  const [countdown, setCountdown] = useState(5)
 
   // Automatically fill topic if coming from Planner
   useEffect(() => {
-    if (location.state?.topic) {
-      setTopic(location.state.topic)
-    }
-  }, [location])
+  if (location.state?.topic) {
+    const selectedTopic = location.state.topic
+
+    const selectedDifficulty =
+      location.state.difficulty || "easy"
+
+    setTopic(selectedTopic)
+
+    setDifficulty(selectedDifficulty)
+
+    generateQuizAutomatically(
+      selectedTopic,
+      selectedDifficulty
+    )
+  }
+}, [location])
+
+  const generateQuizAutomatically = async (
+  selectedTopic,
+  selectedDifficulty
+) => {
+  try {
+    setLoading(true)
+
+    const data = await generateQuiz({
+      topic: selectedTopic,
+    })
+
+    setQuiz(data.quiz)
+    setAnswers({})
+    setResult(null)
+
+    setLoading(false)
+  } catch (error) {
+    console.log(error)
+    setLoading(false)
+  }
+}
 
   const handleGenerateQuiz =
     async () => {
       try {
         setLoading(true)
 
-        const data =
-          await generateQuiz({
+        const data = await generateQuiz({
             topic,
-            difficulty,
           })
 
         setQuiz(data.quiz)
@@ -51,37 +84,43 @@ function Quiz() {
       }
     }
 
-  const handleSubmitQuiz =
-    async () => {
-      try {
-        const payload = {
-          topic,
+  const handleSubmitQuiz = async () => {
+  try {
+    const payload = {
+      topic,
 
-          answers: quiz.map(
-            (q, index) => ({
-              question:
-                q.question,
-
-              userAnswer:
-                answers[index],
-
-              correctAnswer:
-                q.correctAnswer,
-            })
-          ),
-        }
-
-        const response =
-          await axios.post(
-            "http://localhost:5000/api/quiz/submit",
-            payload
-          )
-
-        setResult(response.data)
-      } catch (error) {
-        console.log(error)
-      }
+      answers: quiz.map((q, index) => ({
+        question: q.question,
+        userAnswer: answers[index],
+        correctAnswer: q.correctAnswer,
+      })),
     }
+
+    const response = await axios.post(
+      "http://localhost:5000/api/quiz/submit",
+      payload
+    )
+
+   setResult(response.data)
+
+setCountdown(5)
+
+const interval = setInterval(() => {
+  setCountdown((prev) => {
+    if (prev === 1) {
+      clearInterval(interval)
+      navigate("/dashboard")
+      return 0
+    }
+
+    return prev - 1
+  })
+}, 1000)
+
+  } catch (error) {
+    console.log(error)
+  }
+}
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
@@ -104,27 +143,6 @@ function Quiz() {
           className="w-full p-3 rounded bg-zinc-900"
         />
 
-        <select
-          value={difficulty}
-          onChange={(e) =>
-            setDifficulty(
-              e.target.value
-            )
-          }
-          className="w-full p-3 rounded bg-zinc-900"
-        >
-          <option value="easy">
-            Easy
-          </option>
-
-          <option value="medium">
-            Medium
-          </option>
-
-          <option value="hard">
-            Hard
-          </option>
-        </select>
 
         <button
           onClick={
@@ -195,10 +213,9 @@ function Quiz() {
 
       {quiz.length > 0 && (
         <button
-          onClick={
-            handleSubmitQuiz
-          }
-          className="bg-green-600 px-6 py-3 rounded"
+          disabled = { loading || result }
+          onClick={ handleSubmitQuiz }
+          className="bg-green-600 px-6 py-3 rounded disabled:opacity-50"
         >
           Submit Quiz
         </button>
@@ -206,19 +223,35 @@ function Quiz() {
 
       {/* Result */}
 
-      {result && (
-        <div className="bg-zinc-900 p-6 rounded-xl mt-8">
-          <h2 className="text-2xl font-bold">
-            🎉 Score:
-            {" "}
-            {result.score}
-            {" / "}
-            {
-              result.totalQuestions
-            }
-          </h2>
-        </div>
-      )}
+    {result && (
+  <div className="bg-zinc-900 p-6 rounded-xl mt-8 text-center">
+
+    <h2 className="text-3xl font-bold text-green-400 mb-4">
+      🎉 Quiz Completed!
+    </h2>
+
+    <p className="text-2xl mb-3">
+      Score: {result.score} / {result.totalQuestions}
+    </p>
+
+    <p className="text-green-300">
+      ✅ Quiz submitted successfully.
+    </p>
+
+    <p className="text-green-300 mb-5">
+      📈 Updating your learning progress...
+    </p>
+
+    <p className="text-gray-400">
+      Redirecting to Dashboard in...
+    </p>
+
+    <h1 className="text-6xl font-bold text-blue-500 mt-4">
+      {countdown}
+    </h1>
+
+   </div>
+  )}
 
     </div>
   )

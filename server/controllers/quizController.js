@@ -1,10 +1,46 @@
 const client = require("../ai/openrouter")
-const QuizAttempt = require("../models/QuizAttempt")
 const Mistake = require("../models/Mistake")
+const QuizAttempt = require("../models/QuizAttempt")
+
+const {
+  getRecommendedDifficulty,
+} = require("../helpers/difficultyHelper")
 
 const generateQuiz = async (req, res) => {
   try {
-    const { topic, difficulty } = req.body
+    const { topic} = req.body
+
+    // Get previous attempts for this topic
+const attempts = await QuizAttempt.find({
+  topic: {
+    $regex: new RegExp(
+      "^" + topic + "$",
+      "i"
+    ),
+  },
+})
+
+let averagePercentage = 0
+
+if (attempts.length > 0) {
+  const totalPercentage =
+    attempts.reduce(
+      (sum, attempt) =>
+        sum +
+        (attempt.score /
+          attempt.totalQuestions) *
+          100,
+      0
+    )
+
+  averagePercentage =
+    totalPercentage / attempts.length
+}
+
+const difficulty =
+  getRecommendedDifficulty(
+    averagePercentage
+  )
 
     const completion =
       await client.chat.completions.create({
@@ -45,7 +81,8 @@ Format:
 const quiz = JSON.parse(quizText)
 
   res.status(200).json({
-  quiz,
+    difficulty,
+    quiz,
   })
 
   } catch (error) {

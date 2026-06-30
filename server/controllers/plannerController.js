@@ -1,6 +1,16 @@
 const client = require("../ai/openrouter")
+
 const Mistake = require("../models/Mistake")
 const StudyPlan = require("../models/StudyPlan")
+const QuizAttempt = require("../models/QuizAttempt")
+
+const {
+  getRecommendedDifficulty,
+} = require("../helpers/difficultyHelper")
+
+// ===============================
+// Setup Study Plan
+// ===============================
 
 const setupStudyPlan = async (req, res) => {
   try {
@@ -25,6 +35,10 @@ const setupStudyPlan = async (req, res) => {
     })
   }
 }
+
+// ===============================
+// Today's Study Plan
+// ===============================
 
 const getTodayPlan = async (req, res) => {
   try {
@@ -58,6 +72,7 @@ const getTodayPlan = async (req, res) => {
         (1000 * 60 * 60 * 24)
     )
 
+    // Weak Topics
     const weakTopics =
       await Mistake.aggregate([
         {
@@ -84,39 +99,89 @@ const getTodayPlan = async (req, res) => {
       )
       .join(", ")
 
+    // ===========================
+    // Adaptive Difficulty
+    // ===========================
+
+    const attempts = await QuizAttempt.find()
+
+    let averagePercentage = 0
+
+    if (attempts.length > 0) {
+      const totalPercentage =
+        attempts.reduce(
+          (sum, attempt) =>
+            sum +
+            (attempt.score /
+              attempt.totalQuestions) *
+              100,
+          0
+        )
+
+      averagePercentage =
+        totalPercentage /
+        attempts.length
+    }
+
+    const difficulty =
+      getRecommendedDifficulty(
+        averagePercentage
+      )
+
+    // ===========================
+    // AI Planner
+    // ===========================
+
     const completion =
       await client.chat.completions.create({
-        model: "openai/gpt-3.5-turbo",
+        model:
+          "openai/gpt-3.5-turbo",
 
         messages: [
           {
             role: "system",
-            content: `
-You are NeuroLearn AI, an expert study coach.
 
+            content:
+              "You are NeuroLearn AI, an expert study coach.",
+          },
+
+          {
+            role: "user",
+
+            content: `
 Today's Study Day: ${currentDay}
+
 Days Remaining Until Exam: ${daysLeft}
-Available Study Time Today: ${studyPlan.hoursPerDay} hours
+
+Study Hours Available: ${studyPlan.hoursPerDay}
+
+Recommended Quiz Difficulty: ${difficulty}
 
 Weak Topics:
+
 ${topicList}
 
-Generate ONLY today's study plan.
+Generate ONLY today's study schedule.
 
-IMPORTANT:
-At the end of the response write exactly:
+Requirements:
+
+1. Divide study into sessions.
+
+2. Mention exact topics.
+
+3. Add objectives.
+
+4. Add practice tasks.
+
+5. Add revision.
+
+6. Add one motivational sentence.
+
+Finally write exactly:
 
 Today's Topics:
 - Topic 1
 - Topic 2
-
-Use only 2 or 3 topics.
-
-Also include:
-- Study sessions
-- Practice
-- Revision
-- Motivation
 
 Do not generate tomorrow's plan.
 `,
@@ -124,10 +189,13 @@ Do not generate tomorrow's plan.
         ],
       })
 
-    res.json({
+    res.status(200).json({
       currentDay,
       daysLeft,
-      plan: completion.choices[0].message.content,
+      difficulty,
+      plan:
+        completion.choices[0].message
+          .content,
     })
   } catch (error) {
     console.error(error)
@@ -138,13 +206,22 @@ Do not generate tomorrow's plan.
   }
 }
 
-const completeTodayPlan = async (req, res) => {
+// ===============================
+// Complete Today's Plan
+// ===============================
+
+const completeTodayPlan = async (
+  req,
+  res
+) => {
   try {
-    const studyPlan = await StudyPlan.findOne()
+    const studyPlan =
+      await StudyPlan.findOne()
 
     if (!studyPlan) {
       return res.status(404).json({
-        message: "Study plan not found.",
+        message:
+          "Study plan not found.",
       })
     }
 
@@ -152,19 +229,26 @@ const completeTodayPlan = async (req, res) => {
 
     const currentDay =
       Math.floor(
-        (today - new Date(studyPlan.startDate)) /
-          (1000 * 60 * 60 * 24)
+        (today -
+          new Date(
+            studyPlan.startDate
+          )) /
+          (1000 *
+            60 *
+            60 *
+            24)
       ) + 1
 
-    // Check if today's plan is already completed
     const alreadyCompleted =
       studyPlan.completedDays.find(
-        (day) => day.day === currentDay
+        (day) =>
+          day.day === currentDay
       )
 
     if (alreadyCompleted) {
       return res.status(400).json({
-        message: "Today's study plan is already completed.",
+        message:
+          "Today's study plan is already completed.",
       })
     }
 
@@ -175,7 +259,9 @@ const completeTodayPlan = async (req, res) => {
     await studyPlan.save()
 
     res.status(200).json({
-      message: "Today's study plan marked as completed.",
+      message:
+        "Today's study plan marked as completed.",
+
       completedDays:
         studyPlan.completedDays.length,
     })
@@ -187,8 +273,83 @@ const completeTodayPlan = async (req, res) => {
     })
   }
 }
+
+// ===============================
+// Progress API
+// ===============================
+
+const getProgress = async (
+  req,
+  res
+) => {
+  try {
+    const studyPlan =
+      await StudyPlan.findOne()
+
+    if (!studyPlan) {
+      return res.status(404).json({
+        message:
+          "Study plan not found.",
+      })
+    }
+
+    const today = new Date()
+
+    const startDate = new Date(
+      studyPlan.startDate
+    )
+
+    const examDate = new Date(
+      studyPlan.examDate
+    )
+
+    const currentDay =
+      Math.floor(
+        (today - startDate) /
+          (1000 * 60 * 60 * 24)
+      ) + 1
+
+    const totalDays =
+      Math.ceil(
+        (examDate - startDate) /
+          (1000 * 60 * 60 * 24)
+      ) + 1
+
+    const completedDays =
+      studyPlan.completedDays.length
+
+    const remainingDays =
+      Math.max(
+        totalDays - currentDay,
+        0
+      )
+
+    const completionPercentage =
+      Math.round(
+        (completedDays /
+          totalDays) *
+          100
+      )
+
+    res.status(200).json({
+      currentDay,
+      totalDays,
+      completedDays,
+      remainingDays,
+      completionPercentage,
+    })
+  } catch (error) {
+    console.error(error)
+
+    res.status(500).json({
+      message: error.message,
+    })
+  }
+}
+
 module.exports = {
   setupStudyPlan,
   getTodayPlan,
   completeTodayPlan,
+  getProgress,
 }

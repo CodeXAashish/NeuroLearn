@@ -111,9 +111,11 @@ function Notes() {
       </button>
 
       <button
-        onClick={() => navigate("/quiz", {
+        onClick={() =>navigate("/quiz", {
         state: {
         topic,
+        difficulty: "easy",
+        source: "notes",
       },
     })
   }
