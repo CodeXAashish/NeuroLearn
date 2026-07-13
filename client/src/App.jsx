@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom"
 
+import Landing from "./pages/Landing"
 import Login from "./pages/Login"
 import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
@@ -14,6 +15,8 @@ import Flashcards from "./pages/Flashcards"
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
+
       <Route path="/" element={<Login />} />
 
       <Route path="/register" element={<Register />} />
@@ -34,6 +37,7 @@ function App() {
          <Route path = "/notes" element = {<Notes/>}/>
 
          <Route path="/flashcards" element = { <Flashcards /> }/>
+         
 
     </Routes>
   )
