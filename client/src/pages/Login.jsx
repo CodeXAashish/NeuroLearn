@@ -1,91 +1,172 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import { FaEnvelope, FaLock, FaGoogle } from "react-icons/fa"
 
-import { loginUser } from "../services/authService"
+import AuthBackground from "../components/AuthBackground"
+import AuthCard from "../components/AuthCard"
+import AuthInput from "../components/AuthInput"
 
 function Login() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [remember, setRemember] = useState(false)
 
-  const navigate = useNavigate()
+  const handleSubmit = (e) => {
+    e.preventDefault()
 
-  const [showPassword, setShowPassword] = useState(false)
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  })
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
+    // Your login API will be connected here
+    console.log({
+      email,
+      password,
+      remember,
     })
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    try {
-
-      const data = await loginUser(formData)
-
-      localStorage.setItem("token", data.token)
-
-      alert("Login Successful")
-
-      navigate("/dashboard")
-
-    } catch (error) {
-
-      alert(error.response.data.message)
-
-    }
-  }
-
   return (
-    <div className="h-screen flex items-center justify-center bg-black text-white">
+    <div className="relative min-h-screen overflow-hidden bg-[#020617]">
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-zinc-900 p-8 rounded-xl w-[400px]"
-      >
+      <AuthBackground />
 
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          NeuroLearn Login
-        </h1>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between px-8">
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter Email"
-          onChange={handleChange}
-          className="w-full p-3 mb-4 rounded bg-zinc-800"
-        />
+        {/* Left */}
 
-        <div className="relative mb-4">
+        <div className="hidden w-1/2 lg:flex flex-col justify-center">
 
-          <input
-            type={showPassword ? "text" : "password"}
-            name="password"
-            placeholder="Enter Password"
-            onChange={handleChange}
-            className="w-full p-3 rounded bg-zinc-800"
+          <h1 className="text-5xl font-black leading-tight text-white">
+
+            Welcome to
+
+            <span className="text-cyan-400">
+              {" "}NeuroLearn
+            </span>
+
+          </h1>
+
+          <p className="mt-5 max-w-lg text-lg leading-8 text-slate-300">
+
+            Continue your personalized AI learning
+            journey with quizzes, notes,
+            flashcards and study planner.
+
+          </p>
+
+          <img
+            src="/images/login-ai.png"
+            alt="AI"
+            className="mt-12 w-[430px]"
           />
-
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-3 text-sm text-gray-300"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
 
         </div>
 
-        <button className="w-full bg-blue-600 p-3 rounded hover:bg-blue-700">
-          Login
-        </button>
+        {/* Right */}
 
-      </form>
+        <AuthCard
+          title="Welcome Back 👋"
+          subtitle="Sign in to continue learning."
+        >
+
+          <form
+            onSubmit={handleSubmit}
+          >
+
+            <AuthInput
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              placeholder="Enter your email"
+              icon={<FaEnvelope />}
+            />
+
+            <AuthInput
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e) =>
+                setPassword(e.target.value)
+              }
+              placeholder="Enter your password"
+              icon={<FaLock />}
+            />
+
+            <div className="mb-8 flex items-center justify-between">
+
+              <label className="flex items-center gap-2 text-sm text-gray-400">
+
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={() =>
+                    setRemember(!remember)
+                  }
+                />
+
+                Remember Me
+
+              </label>
+
+              <button
+                type="button"
+                onClick={() => alert("Coming Soon")}
+                className="text-sm text-cyan-400 hover:underline"
+              >
+                Forgot Password?
+              </button>
+
+            </div>
+
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-cyan-500 py-3 font-semibold text-black transition hover:scale-[1.02] hover:bg-cyan-400"
+            >
+              Sign In
+            </button>
+
+            <div className="my-5 flex items-center">
+
+              <div className="h-px flex-1 bg-slate-700" />
+
+              <span className="mx-4 text-sm text-gray-400">
+                OR
+              </span>
+
+              <div className="h-px flex-1 bg-slate-700" />
+
+            </div>
+
+            <button
+              type="button"
+               onClick={() => alert("Google Sign-In coming soon")}
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-700 py-4 text-white transition hover:border-cyan-400 hover:bg-slate-800"
+            >
+
+              <FaGoogle />
+
+              Continue with Google
+
+            </button>
+
+            <p className="mt-5 text-center text-gray-400">
+
+              Don't have an account?
+
+              <Link
+                to="/register"
+                className="ml-2 text-cyan-400 hover:underline"
+              >
+                Sign Up
+              </Link>
+
+            </p>
+
+          </form>
+
+        </AuthCard>
+
+      </div>
 
     </div>
   )
