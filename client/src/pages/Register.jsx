@@ -1,78 +1,159 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import {
+  FaEnvelope,
+  FaLock,
+  FaCheckCircle,
+} from "react-icons/fa"
 
-import { registerUser } from "../services/authService"
+import AuthBackground from "../components/AuthBackground"
+import AuthCard from "../components/AuthCard"
+import AuthInput from "../components/AuthInput"
 
 function Register() {
-  const navigate = useNavigate()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [agree, setAgree] = useState(false)
 
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  })
+  const handleSubmit = (e) => {
+    e.preventDefault()
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
+    console.log({
+      email,
+      password,
+      confirmPassword,
+      agree,
     })
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    try {
-      const data = await registerUser(formData)
-
-      localStorage.setItem("token", data.token)
-
-      alert("Registration Successful")
-
-      navigate("/dashboard")
-    } catch (error) {
-      alert(error.response.data.message)
-    }
-  }
-
   return (
-    <div className="h-screen flex items-center justify-center bg-black text-white">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-zinc-900 p-8 rounded-xl w-[400px]"
-      >
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          NeuroLearn Register
-        </h1>
+    <div className="relative min-h-screen overflow-hidden bg-[#020617]">
 
-        <input
-          type="text"
-          name="name"
-          placeholder="Enter Name"
-          onChange={handleChange}
-          className="w-full p-3 mb-4 rounded bg-zinc-800"
-        />
+      <AuthBackground />
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Enter Email"
-          onChange={handleChange}
-          className="w-full p-3 mb-4 rounded bg-zinc-800"
-        />
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between px-8">
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Enter Password"
-          onChange={handleChange}
-          className="w-full p-3 mb-4 rounded bg-zinc-800"
-        />
+        {/* Left Side */}
 
-        <button className="w-full bg-green-600 p-3 rounded hover:bg-green-700">
-          Register
-        </button>
-      </form>
+        <div className="hidden w-1/2 lg:flex flex-col justify-center">
+
+          <h1 className="text-6xl font-black text-white leading-tight">
+            Start Learning with
+            <span className="text-cyan-400">
+              {" "}NeuroLearn
+            </span>
+          </h1>
+
+          <p className="mt-6 max-w-lg text-lg text-slate-300 leading-8">
+            Create your account and unlock personalized
+            study plans, AI-generated notes,
+            adaptive quizzes, flashcards
+            and detailed analytics.
+          </p>
+
+          <div className="mt-10 space-y-6">
+
+            {[
+              "Personalized Study Planner",
+              "AI Notes Generator",
+              "Adaptive Quiz System",
+              "Interactive Flashcards",
+              "Performance Analytics",
+            ].map((item) => (
+              <div
+                key={item}
+                className="flex items-center gap-4"
+              >
+                <FaCheckCircle className="text-cyan-400" />
+
+                <span className="text-slate-300">
+                  {item}
+                </span>
+
+              </div>
+            ))}
+
+          </div>
+
+        </div>
+
+        {/* Right Side */}
+
+        <AuthCard
+          title="Create Account"
+          subtitle="Begin your AI-powered learning journey."
+        >
+
+          <form onSubmit={handleSubmit}>
+
+            <AuthInput
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e)=>setEmail(e.target.value)}
+              placeholder="Enter your email"
+              icon={<FaEnvelope />}
+            />
+
+            <AuthInput
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(e)=>setPassword(e.target.value)}
+              placeholder="Create password"
+              icon={<FaLock />}
+            />
+
+            <AuthInput
+              label="Confirm Password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e)=>setConfirmPassword(e.target.value)}
+              placeholder="Confirm password"
+              icon={<FaLock />}
+            />
+
+            <label className="mb-6 flex items-center gap-3 text-sm text-slate-400">
+
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={() =>
+                  setAgree(!agree)
+                }
+              />
+
+              I agree to the Terms & Conditions
+
+            </label>
+
+            <button
+              disabled={!agree}
+              className="w-full rounded-xl bg-cyan-500 py-4 font-semibold text-black transition hover:scale-[1.02] hover:bg-cyan-400 disabled:opacity-50"
+            >
+              Create Account
+            </button>
+
+            <p className="mt-8 text-center text-slate-400">
+
+              Already have an account?
+
+              <Link
+                to="/login"
+                className="ml-2 text-cyan-400 hover:underline"
+              >
+                Sign In
+              </Link>
+
+            </p>
+
+          </form>
+
+        </AuthCard>
+
+      </div>
+
     </div>
   )
 }
