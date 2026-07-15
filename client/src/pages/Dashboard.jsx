@@ -1,3 +1,8 @@
+
+import DashboardNavbar from "../components/DashboardNavbar"
+import WelcomeSection from "../components/WelcomeSection"
+import ContinueLearningCard from "../components/ContinueLearningCard"
+import AnalyticsCards from "../components/AnalyticsCards"
 import {
   BarChart,
   Bar,
@@ -6,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts"
+
 
 import { useEffect, useState } from "react"
 
@@ -49,24 +55,23 @@ function Dashboard() {
   )
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <h1 className="text-4xl font-bold mb-8">
-        NeuroLearn Dashboard 🚀
-      </h1>
+  <div className="min-h-screen bg-[#020617] text-white">
 
-      <div className="grid md:grid-cols-2 gap-6">
+    <DashboardNavbar />
 
-        {/* Total Quizzes */}
-        <div className="bg-zinc-900 p-6 rounded-xl">
-          <h2 className="text-xl font-semibold">
-            Total Quizzes
-          </h2>
+    <main className="mx-auto max-w-7xl p-8">
 
-          <p className="text-4xl mt-4">
-            {analytics.totalQuizzes}
-          </p>
-        </div>
+      <WelcomeSection />
+      
+          <div className="mt-8">
+               <ContinueLearningCard />
+            </div>
 
+         <div className="mt-8">
+
+         <AnalyticsCards analytics={analytics} />
+
+         </div>
         {/* Average Score */}
         <div className="bg-zinc-900 p-6 rounded-xl">
           <h2 className="text-xl font-semibold">
@@ -130,6 +135,7 @@ function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+      </main>
     </div>
   )
 }
