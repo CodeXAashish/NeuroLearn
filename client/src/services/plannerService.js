@@ -2,10 +2,21 @@ import axios from "axios"
 
 const API = "http://localhost:5000/api/planner"
 
+const getAuthConfig = () => {
+  const token = localStorage.getItem("token")
+
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  }
+}
+
 export const setupStudyPlan = async (data) => {
   const response = await axios.post(
     `${API}/setup`,
-    data
+    data,
+    getAuthConfig()
   )
 
   return response.data
@@ -13,7 +24,8 @@ export const setupStudyPlan = async (data) => {
 
 export const getTodayPlan = async () => {
   const response = await axios.get(
-    `${API}/today`
+    `${API}/today`,
+    getAuthConfig()
   )
 
   return response.data
@@ -21,7 +33,9 @@ export const getTodayPlan = async () => {
 
 export const completeTodayPlan = async () => {
   const response = await axios.post(
-    `${API}/complete`
+    `${API}/complete`,
+    {},
+    getAuthConfig()
   )
 
   return response.data
@@ -29,7 +43,8 @@ export const completeTodayPlan = async () => {
 
 export const getProgress = async () => {
   const response = await axios.get(
-    `${API}/progress`
+    `${API}/progress`,
+    getAuthConfig()
   )
 
   return response.data

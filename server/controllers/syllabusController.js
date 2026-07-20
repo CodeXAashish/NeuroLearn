@@ -19,11 +19,31 @@ const uploadSyllabus = async (req, res) => {
       .filter((line) => line.length > 5)
       .slice(0, 20)
 
-    const syllabus = await Syllabus.create({
-      title: req.file.originalname,
-      content: text,
-      topics,
-    })
+    // Convert extracted topics into topic objects
+  const formattedTopics = topics.map((topic) => ({
+  name: topic.trim(),
+  completed: false,
+  completedAt: null,
+  notesGenerated: false,
+  flashcardsGenerated: false,
+  quizCompleted: false,
+  mastery: 0,
+  }))
+
+  const syllabus = await Syllabus.create({
+  user: req.user._id,
+
+  title: req.file.originalname,
+
+  content: text,
+
+  subjects: [
+    {
+      name: req.file.originalname.replace(".pdf", ""),
+      topics: formattedTopics,
+    },
+  ],
+  })
 
     res.status(201).json({
       message: "Syllabus uploaded successfully",
@@ -36,6 +56,21 @@ const uploadSyllabus = async (req, res) => {
   }
 }
 
+const getMySyllabuses = async (req, res) => {
+  try {
+    const syllabuses = await Syllabus.find({
+      user: req.user._id,
+    })
+
+    res.status(200).json(syllabuses)
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    })
+  }
+}
+
 module.exports = {
   uploadSyllabus,
+  getMySyllabuses,
 }

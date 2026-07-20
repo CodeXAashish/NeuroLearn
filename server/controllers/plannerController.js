@@ -16,9 +16,12 @@ const setupStudyPlan = async (req, res) => {
   try {
     const { examDate, hoursPerDay } = req.body
 
-    await StudyPlan.deleteMany({})
+    await StudyPlan.deleteMany({
+     user: req.user._id,
+    })
 
     const plan = await StudyPlan.create({
+       user: req.user._id,
       examDate,
       hoursPerDay,
     })
@@ -42,8 +45,9 @@ const setupStudyPlan = async (req, res) => {
 
 const getTodayPlan = async (req, res) => {
   try {
-    const studyPlan = await StudyPlan.findOne()
-
+    const studyPlan = await StudyPlan.findOne({
+  user: req.user._id,
+})
     if (!studyPlan) {
       return res.status(404).json({
         message:
@@ -74,9 +78,15 @@ const getTodayPlan = async (req, res) => {
 
     // Weak Topics
     const weakTopics =
-      await Mistake.aggregate([
-        {
-          $group: {
+  await Mistake.aggregate([
+    {
+      $match:{
+        user:req.user._id,
+        resolved:false,
+      },
+    },
+    {
+      $group:{
             _id: {
               $toUpper: "$topic",
             },
@@ -103,7 +113,10 @@ const getTodayPlan = async (req, res) => {
     // Adaptive Difficulty
     // ===========================
 
-    const attempts = await QuizAttempt.find()
+    const attempts =
+  await QuizAttempt.find({
+    user:req.user._id,
+  })
 
     let averagePercentage = 0
 
@@ -216,7 +229,9 @@ const completeTodayPlan = async (
 ) => {
   try {
     const studyPlan =
-      await StudyPlan.findOne()
+  await StudyPlan.findOne({
+    user:req.user._id,
+  })
 
     if (!studyPlan) {
       return res.status(404).json({
@@ -283,9 +298,10 @@ const getProgress = async (
   res
 ) => {
   try {
-    const studyPlan =
-      await StudyPlan.findOne()
-
+   const studyPlan =
+  await StudyPlan.findOne({
+    user:req.user._id,
+  })
     if (!studyPlan) {
       return res.status(404).json({
         message:

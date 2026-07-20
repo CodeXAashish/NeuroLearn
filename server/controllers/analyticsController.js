@@ -1,18 +1,34 @@
 const Mistake = require("../models/Mistake")
 const QuizAttempt = require("../models/QuizAttempt")
 
-const getDashboardAnalytics = async (
-  req,
-  res
-) => {
-  try {
-    // Total quizzes
-    const totalQuizzes =
-      await QuizAttempt.countDocuments()
 
-    // Average score
+
+const getDashboardAnalytics = async (req, res) => {
+
+  console.log("Logged in user:", req.user._id)
+
+const attempts = await QuizAttempt.find({
+  user: req.user._id,
+})
+
+console.log("Attempts:", attempts)
+
+
+  try {
+    const userId = req.user._id
+
+    const totalQuizzes =
+      await QuizAttempt.countDocuments({
+        user: userId,
+      })
+
     const averageScoreData =
       await QuizAttempt.aggregate([
+        {
+          $match: {
+            user: userId,
+          },
+        },
         {
           $group: {
             _id: null,
@@ -28,13 +44,18 @@ const getDashboardAnalytics = async (
         ? averageScoreData[0].averageScore
         : 0
 
-    // Weak topics
     const weakTopics =
       await Mistake.aggregate([
         {
+          $match: {
+            user: userId,
+            resolved: false
+          },
+        },
+        {
           $group: {
             _id: {
-                $toUpper: "$topic",
+              $toUpper: "$topic",
             },
             count: {
               $sum: 1,
@@ -53,8 +74,7 @@ const getDashboardAnalytics = async (
 
     res.status(200).json({
       totalQuizzes,
-      averageScore:
-        averageScore.toFixed(2),
+      averageScore: averageScore.toFixed(2),
       weakTopics,
     })
   } catch (error) {

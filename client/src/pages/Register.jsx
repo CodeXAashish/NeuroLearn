@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { registerUser } from "../services/authService"
 import {
   FaEnvelope,
   FaLock,
@@ -16,17 +17,41 @@ function Register() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [agree, setAgree] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const navigate = useNavigate()
 
-    console.log({
-      email,
-      password,
-      confirmPassword,
-      agree,
-    })
+  const handleSubmit = async (e) => {
+  e.preventDefault()
+
+  if (password !== confirmPassword) {
+    return alert("Passwords do not match")
   }
 
+  if (!agree) {
+    return alert("Please accept the Terms & Conditions")
+  }
+
+  try {
+    const data = await registerUser({
+      email,
+      password,
+    })
+
+    localStorage.setItem("token", data.token)
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.user)
+    )
+
+    navigate("/dashboard")
+
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+      "Registration failed"
+    )
+  }
+}
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#020617]">
 

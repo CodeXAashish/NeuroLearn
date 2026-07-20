@@ -11,6 +11,9 @@ import Chat from "./pages/Chat"
 import Planner from "./pages/Planner"
 import Notes from "./pages/Notes"
 import Flashcards from "./pages/Flashcards"
+import UploadSyllabus from "./pages/UploadSyllabus"
+import StudyMaterials from "./pages/StudyMaterials"
+
 
 function App() {
   return (
@@ -28,18 +31,62 @@ function App() {
         } 
       />
 
-         <Route path="/quiz" element={<Quiz />} />
+        <Route path="/planner"
+          element={
+        <ProtectedRoute>
+            <Planner />
+         </ProtectedRoute>
+        }
+       />
 
-         <Route path="/chat" element={<Chat />} />
+<Route path="/notes"
+  element={
+    <ProtectedRoute>
+      <Notes />
+    </ProtectedRoute>
+  }
+/>
 
-         <Route path="/planner" element={<Planner />} />
+<Route path="/quiz"
+  element={
+    <ProtectedRoute>
+      <Quiz />
+    </ProtectedRoute>
+  }
+/>
 
-         <Route path = "/notes" element = {<Notes/>}/>
+<Route path="/flashcards"
+  element={
+    <ProtectedRoute>
+      <Flashcards />
+    </ProtectedRoute>
+  }
+/>
 
-         <Route path="/flashcards" element = { <Flashcards /> }/>
-         
+<Route path="/chat"
+  element={
+    <ProtectedRoute>
+      <Chat />
+    </ProtectedRoute>
+  }
+/>
 
-    </Routes>
+      <Route path="/upload-syllabus"
+           element={
+             <ProtectedRoute>
+               <UploadSyllabus />
+            </ProtectedRoute>
+            }
+          />
+
+          <Route path="/study-materials"
+             element={
+              <ProtectedRoute>
+                <StudyMaterials />
+             </ProtectedRoute>
+  }
+/>
+  </Routes>
   )
 }
 

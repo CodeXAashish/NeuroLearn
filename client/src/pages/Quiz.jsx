@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react"
 import { useLocation } from "react-router-dom"
-import axios from "axios"
-import { generateQuiz } from "../services/quizService"
+import {
+  generateQuiz,
+  submitQuiz,
+} from "../services/quizService"
 import { useNavigate} from "react-router-dom"
 
 function Quiz() {
@@ -96,12 +98,9 @@ function Quiz() {
       })),
     }
 
-    const response = await axios.post(
-      "http://localhost:5000/api/quiz/submit",
-      payload
-    )
+    const data = await submitQuiz(payload)
 
-   setResult(response.data)
+     setResult(data)
 
 setCountdown(5)
 

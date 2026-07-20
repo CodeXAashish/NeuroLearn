@@ -12,11 +12,9 @@ const generateQuiz = async (req, res) => {
 
     // Get previous attempts for this topic
 const attempts = await QuizAttempt.find({
+  user: req.user._id,
   topic: {
-    $regex: new RegExp(
-      "^" + topic + "$",
-      "i"
-    ),
+    $regex: new RegExp("^" + topic + "$", "i"),
   },
 })
 
@@ -102,32 +100,51 @@ const submitQuiz = async (req, res) => {
     let score = 0
 
     for (const answer of answers) {
-      if (answer.userAnswer === answer.correctAnswer) 
-        {
-        score++
-       } else {
-                await Mistake.create({
-          topic: normalizedTopic,
-          question: answer.question,
-          userAnswer: answer.userAnswer,
-          correctAnswer: answer.correctAnswer,
-        })
-      }
+
+  if (answer.userAnswer === answer.correctAnswer) {
+
+    score++
+
+    // Resolve one previous unresolved mistake
+    const unresolvedMistake = await Mistake.findOne({
+      user: req.user._id,
+      topic: normalizedTopic,
+      question: answer.question,
+      resolved: false,
+    })
+
+    if (unresolvedMistake) {
+      unresolvedMistake.resolved = true
+      unresolvedMistake.resolvedAt = new Date()
+
+      await unresolvedMistake.save()
     }
 
-    const attempt =
-      await QuizAttempt.create({
-        topic: normalizedTopic,
-        score,
-        totalQuestions: answers.length,
-      })
+  } else {
+
+    await Mistake.create({
+      user: req.user._id,
+      topic: normalizedTopic,
+      question: answer.question,
+      userAnswer: answer.userAnswer,
+      correctAnswer: answer.correctAnswer,
+    })
+
+  }
+}
+    const attempt = await QuizAttempt.create({
+      user: req.user._id,
+      topic: normalizedTopic,
+      score,
+      totalQuestions: answers.length,
+    })
 
     res.status(200).json({
       score,
       totalQuestions: answers.length,
       attempt,
     })
-  } catch (error) {
+   } catch (error) {
     console.log(error)
 
     res.status(500).json({

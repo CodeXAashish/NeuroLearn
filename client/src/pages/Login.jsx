@@ -1,5 +1,7 @@
 import { useState } from "react"
 import { Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { loginUser } from "../services/authService"
 import { FaEnvelope, FaLock, FaGoogle } from "react-icons/fa"
 
 import AuthBackground from "../components/AuthBackground"
@@ -10,17 +12,33 @@ function Login() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [remember, setRemember] = useState(false)
+  const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
+  const handleSubmit = async (e) => {
+  e.preventDefault()
 
-    // Your login API will be connected here
-    console.log({
+  try {
+    const data = await loginUser({
       email,
       password,
-      remember,
     })
+
+    localStorage.setItem("token", data.token)
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(data.user)
+    )
+
+    navigate("/dashboard")
+
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+      "Login failed"
+    )
   }
+}
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#020617]">

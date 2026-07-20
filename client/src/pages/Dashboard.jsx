@@ -3,6 +3,7 @@ import DashboardNavbar from "../components/DashboardNavbar"
 import WelcomeSection from "../components/WelcomeSection"
 import ContinueLearningCard from "../components/ContinueLearningCard"
 import AnalyticsCards from "../components/AnalyticsCards"
+import FeatureGrid from "../components/FeatureGrid"
 import {
   BarChart,
   Bar,
@@ -72,18 +73,10 @@ function Dashboard() {
          <AnalyticsCards analytics={analytics} />
 
          </div>
-        {/* Average Score */}
-        <div className="bg-zinc-900 p-6 rounded-xl">
-          <h2 className="text-xl font-semibold">
-            Average Score
-          </h2>
-
-          <p className="text-4xl mt-4">
-            {analytics.averageScore}%
-          </p>
-        </div>
-
-      </div>
+         <div className="mt-10">
+          <FeatureGrid />
+          </div>
+        
 
       {/* Weak Topics */}
 
@@ -136,7 +129,7 @@ function Dashboard() {
         </div>
       </div>
       </main>
-    </div>
+      </div>
   )
 }
 

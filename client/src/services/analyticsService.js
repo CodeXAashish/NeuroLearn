@@ -3,10 +3,16 @@ import axios from "axios"
 const API_URL = "http://localhost:5000/api/analytics"
 
 export const getAnalytics = async () => {
-    const response =
-      await axios.get(
-        `${API_URL}/dashboard`
-      )
+  const token = localStorage.getItem("token")
 
-    return response.data
-  }
+  const response = await axios.get(
+    `${API_URL}/dashboard`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  return response.data
+}

@@ -15,6 +15,8 @@ const plannerRoutes = require("./routes/plannerRoutes")
 
 const notesRoutes = require("./routes/notesRoutes")
 const flashcardRoutes = require("./routes/flashcardRoutes")
+const dashboardRoutes =  require("./routes/dashboardRoutes")
+
 
 
 const app = express()
@@ -34,6 +36,9 @@ app.use("/api/analytics",analyticsRoutes)
 app.use("/api/planner", plannerRoutes)
 app.use("/api/notes", notesRoutes)
 app.use("/api/flashcards", flashcardRoutes)
+
+app.use("/api/dashboard",dashboardRoutes)
+
 
 
 app.get("/", (req, res) => {
