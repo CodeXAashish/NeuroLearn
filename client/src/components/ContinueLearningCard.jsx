@@ -1,11 +1,43 @@
 import { motion } from "framer-motion"
+import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+
+import {
+  getContinueLearning,
+} from "../services/dashboardService"
 import {
   FaArrowRight,
   FaBookOpen,
-  FaClock,
 } from "react-icons/fa"
 
 function ContinueLearningCard() {
+  const navigate = useNavigate()
+
+const [data, setData] = useState({
+  topic: "",
+  progress: 0,
+  lastStudied: "",
+  status: "",
+  nextRoute: "/planner",
+})
+ useEffect(() => {
+  const loadData = async () => {
+    try {
+      const response =
+        await getContinueLearning()
+
+      setData(response)
+    } catch (error) {
+      console.log(error)
+    }
+  }
+
+  loadData()
+}, [])
+
+const handleResume = () => {
+  navigate(data.nextRoute)
+}
 
   return (
 
@@ -39,13 +71,13 @@ function ContinueLearningCard() {
 
           <h2 className="mt-5 text-3xl font-bold text-white">
 
-            Database Management System
+            {data.topic}
 
           </h2>
 
           <p className="mt-3 text-slate-400">
 
-            Last studied 2 hours ago
+            Last studied {data.lastStudied}
 
           </p>
 
@@ -70,7 +102,7 @@ function ContinueLearningCard() {
 
           <span>Progress</span>
 
-          <span>68%</span>
+          <span>{data.progress}%</span>
 
         </div>
 
@@ -81,7 +113,7 @@ function ContinueLearningCard() {
               width: 0,
             }}
             animate={{
-              width: "68%",
+              width: `${data.progress}%`,
             }}
             transition={{
               duration: 1.2,
@@ -95,15 +127,21 @@ function ContinueLearningCard() {
 
       <div className="mt-8 flex items-center justify-between">
 
-        <div className="flex items-center gap-2 text-slate-400">
-
-          <FaClock />
-
-          <span>Estimated 25 min remaining</span>
-
-        </div>
-
-        <button
+        <div className="text-slate-400">
+  <span>
+    Status:{" "}
+    <span
+      className={
+        data.status === "Completed"
+          ? "text-green-400 font-semibold"
+          : "text-yellow-400 font-semibold"
+      }
+    >
+      {data.status}
+    </span>
+  </span>
+</div>
+        <button onClick={handleResume}
           className="flex items-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-black transition hover:bg-cyan-400"
         >
 
