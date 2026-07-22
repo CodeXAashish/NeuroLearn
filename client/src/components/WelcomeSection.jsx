@@ -10,6 +10,8 @@ import { useEffect, useState } from "react"
 
 import { getHeroData } from "../services/dashboardService"
 import { getTodayPlan } from "../services/plannerService"
+import { useNavigate } from "react-router-dom"
+
 
 function WelcomeSection() {
   const [heroData, setHeroData] = useState({
@@ -22,7 +24,9 @@ function WelcomeSection() {
 
   const [todayGoal, setTodayGoal] = useState("Loading...")
 
-  const user = JSON.parse(localStorage.getItem("user"))
+  const user = JSON.parse(localStorage.getItem("user") || "{}")
+  
+  const navigate = useNavigate()
 
   const userName =
     user?.name ||
@@ -33,11 +37,12 @@ function WelcomeSection() {
     const loadDashboard = async () => {
       try {
         // Hero Data
-        const hero = await getHeroData()
-        setHeroData(hero)
+       const [hero, planData] = await Promise.all([
+       getHeroData(),
+      getTodayPlan(),
+    ])
 
-        // Today's Plan
-        const planData = await getTodayPlan()
+      setHeroData(hero)
 
         if (planData?.plan) {
           const topicsMatch = planData.plan.match(
@@ -70,6 +75,19 @@ function WelcomeSection() {
 
     loadDashboard()
   }, [])
+
+  const handleContinueLearning = () => {
+  if (todayGoal === "Loading...") {
+    return
+  }
+
+  if (todayGoal === "No study plan") {
+    navigate("/planner")
+    return
+  }
+
+  navigate("/planner")
+}
 
   const today = new Date().toLocaleDateString(
     "en-US",
@@ -194,10 +212,17 @@ function WelcomeSection() {
             {heroData.totalDays}
           </p>
 
-          <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-500 py-3 font-semibold text-black transition hover:scale-[1.02] hover:bg-cyan-400">
-            Continue Learning
-            <FaArrowRight />
-          </button>
+          <button onClick={handleContinueLearning}
+           disabled={todayGoal === "Loading..."}
+          className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition
+        ${
+           todayGoal === "Loading..."
+        ? "cursor-not-allowed bg-slate-600 text-slate-300"
+        : "bg-cyan-500 text-black hover:scale-[1.02] hover:bg-cyan-400"
+        }`} >
+         Continue Learning
+        <FaArrowRight />
+        </button>
         </motion.div>
       </div>
     </motion.section>
