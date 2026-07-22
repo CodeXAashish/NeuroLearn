@@ -1,4 +1,5 @@
 const StudyPlan = require("../models/StudyPlan")
+const client = require("../ai/openrouter")
 
 const getHeroData = async (req, res) => {
   try {
@@ -58,7 +59,63 @@ const getHeroData = async (req, res) => {
     })
   }
 }
+const getContinueLearning = async (req, res) => {
+  try {
+    const studyPlan = await StudyPlan.findOne({
+      user: req.user._id,
+    })
 
+    if (!studyPlan) {
+      return res.json({
+        topic: "No Study Plan",
+        progress: 0,
+        lastStudied: "Never",
+        estimatedTime: 0,
+        nextRoute: "/planner",
+      })
+    }
+
+    const today = new Date()
+
+    const currentDay =
+      Math.floor(
+        (today - new Date(studyPlan.startDate)) /
+          (1000 * 60 * 60 * 24)
+      ) + 1
+
+    const todayPlan = studyPlan.dailyPlans.find(
+      (plan) => plan.day === currentDay
+    )
+
+    if (!todayPlan) {
+      return res.json({
+        topic: "Study Plan Completed",
+        progress: 100,
+        lastStudied: "Completed",
+        estimatedTime: 0,
+        nextRoute: "/dashboard",
+      })
+    }
+
+    res.json({
+      topic: todayPlan.topics.join(", "),
+      progress: todayPlan.completed ? 100 : 0,
+      lastStudied: todayPlan.completed
+        ? "Completed"
+        : "Today",
+      estimatedTime: 0,
+status: todayPlan.completed
+  ? "Completed"
+  : "In Progress",
+      nextRoute: "/planner",
+    })
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    })
+  }
+}
 module.exports = {
   getHeroData,
+  getContinueLearning,
 }

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 import {
   setupStudyPlan,
   getTodayPlan,
+  completeTodayPlan,
 } from "../services/plannerService"
 
 function Planner() {
@@ -114,7 +115,20 @@ function Planner() {
       </div>
     )
   }
+  const handleComplete = async () => {
+  try {
+    await completeTodayPlan()
 
+    alert("🎉 Today's study plan completed!")
+
+    navigate("/dashboard")
+  } catch (error) {
+    alert(
+      error.response?.data?.message ||
+      "Unable to complete today's plan."
+    )
+  }
+}
   return (
     <div className="min-h-screen bg-black text-white p-10">
 
@@ -135,6 +149,10 @@ function Planner() {
         <div className="whitespace-pre-wrap leading-8">
           {todayPlan.plan}
         </div>
+        <button onClick={handleComplete}
+          className="mt-6 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg">
+          ✅ Complete Today's Plan
+        </button>
 
       </div>
 

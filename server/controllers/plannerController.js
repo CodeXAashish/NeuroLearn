@@ -3,6 +3,7 @@ const client = require("../ai/openrouter")
 const Mistake = require("../models/Mistake")
 const StudyPlan = require("../models/StudyPlan")
 const QuizAttempt = require("../models/QuizAttempt")
+const Syllabus = require("../models/Syllabus")
 
 const {
   getRecommendedDifficulty,
@@ -11,23 +12,113 @@ const {
 // ===============================
 // Setup Study Plan
 // ===============================
-
 const setupStudyPlan = async (req, res) => {
   try {
     const { examDate, hoursPerDay } = req.body
 
+    const syllabus = await Syllabus.findOne({
+      user: req.user._id,
+    })
+
+    if (!syllabus) {
+      return res.status(404).json({
+        message: "Please upload a syllabus first.",
+      })
+    }
+
     await StudyPlan.deleteMany({
-     user: req.user._id,
+      user: req.user._id,
+    })
+
+    const startDate = new Date()
+
+    const endDate = new Date(examDate)
+
+    const totalDays =
+      Math.ceil(
+        (endDate - startDate) /
+          (1000 * 60 * 60 * 24)
+      ) + 1
+
+    const syllabusText = syllabus.subjects
+      .map(
+        (subject) => `
+Subject: ${subject.name}
+
+Topics:
+${subject.topics
+  .map((topic) => `- ${topic.name}`)
+  .join("\n")}
+`
+      )
+      .join("\n")
+
+    const completion =
+      await client.chat.completions.create({
+        model: "openai/gpt-3.5-turbo",
+
+        messages: [
+          {
+            role: "user",
+
+            content: `
+Generate a ${totalDays}-day study plan.
+
+Study Hours Per Day:
+${hoursPerDay}
+
+Use ONLY the syllabus below.
+
+${syllabusText}
+
+Return ONLY valid JSON.
+
+Example:
+
+[
+ {
+   "day":1,
+   "topics":["Variables","Data Types"]
+ },
+ {
+   "day":2,
+   "topics":["Classes","Objects"]
+ }
+]
+`,
+          },
+        ],
+      })
+
+    const aiPlan = JSON.parse(
+      completion.choices[0].message.content
+    )
+
+    const dailyPlans = aiPlan.map((item) => {
+      const date = new Date(startDate)
+
+      date.setDate(
+        startDate.getDate() + (item.day - 1)
+      )
+
+      return {
+        day: item.day,
+        date,
+        topics: item.topics,
+        completed: false,
+      }
     })
 
     const plan = await StudyPlan.create({
-       user: req.user._id,
+      user: req.user._id,
       examDate,
       hoursPerDay,
+      startDate,
+      dailyPlans,
     })
 
     res.status(201).json({
-      message: "Study plan setup completed.",
+      message: "Study plan created successfully.",
       plan,
     })
   } catch (error) {
@@ -39,31 +130,22 @@ const setupStudyPlan = async (req, res) => {
   }
 }
 
-// ===============================
-// Today's Study Plan
-// ===============================
-
 const getTodayPlan = async (req, res) => {
   try {
     const studyPlan = await StudyPlan.findOne({
-  user: req.user._id,
-})
+      user: req.user._id,
+    })
+
     if (!studyPlan) {
       return res.status(404).json({
-        message:
-          "Please setup your study plan first.",
+        message: "Please setup your study plan first.",
       })
     }
 
     const today = new Date()
 
-    const startDate = new Date(
-      studyPlan.startDate
-    )
-
-    const examDate = new Date(
-      studyPlan.examDate
-    )
+    const startDate = new Date(studyPlan.startDate)
+    const examDate = new Date(studyPlan.examDate)
 
     const currentDay =
       Math.floor(
@@ -71,22 +153,37 @@ const getTodayPlan = async (req, res) => {
           (1000 * 60 * 60 * 24)
       ) + 1
 
-    const daysLeft = Math.ceil(
-      (examDate - today) /
-        (1000 * 60 * 60 * 24)
+    const daysLeft = Math.max(
+      Math.ceil(
+        (examDate - today) /
+          (1000 * 60 * 60 * 24)
+      ),
+      0
     )
+
+    // Today's saved plan
+    const todayPlan =
+      studyPlan.dailyPlans.find(
+        (plan) => plan.day === currentDay
+      )
+
+    if (!todayPlan) {
+      return res.status(404).json({
+        message: "No study plan found for today.",
+      })
+    }
 
     // Weak Topics
     const weakTopics =
-  await Mistake.aggregate([
-    {
-      $match:{
-        user:req.user._id,
-        resolved:false,
-      },
-    },
-    {
-      $group:{
+      await Mistake.aggregate([
+        {
+          $match: {
+            user: req.user._id,
+            resolved: false,
+          },
+        },
+        {
+          $group: {
             _id: {
               $toUpper: "$topic",
             },
@@ -95,28 +192,13 @@ const getTodayPlan = async (req, res) => {
             },
           },
         },
-        {
-          $sort: {
-            mistakes: -1,
-          },
-        },
       ])
 
-    const topicList = weakTopics
-      .map(
-        (topic) =>
-          `${topic._id} (${topic.mistakes} mistakes)`
-      )
-      .join(", ")
-
-    // ===========================
-    // Adaptive Difficulty
-    // ===========================
-
+    // Quiz Attempts
     const attempts =
-  await QuizAttempt.find({
-    user:req.user._id,
-  })
+      await QuizAttempt.find({
+        user: req.user._id,
+      })
 
     let averagePercentage = 0
 
@@ -141,74 +223,36 @@ const getTodayPlan = async (req, res) => {
         averagePercentage
       )
 
-    // ===========================
-    // AI Planner
-    // ===========================
+    const weakTopicsText =
+      weakTopics.length > 0
+        ? weakTopics
+            .map(
+              (t) =>
+                `${t._id} (${t.mistakes})`
+            )
+            .join(", ")
+        : "None"
 
-    const completion =
-      await client.chat.completions.create({
-        model:
-          "openai/gpt-3.5-turbo",
+    const plan = `
+Today's Topics:
 
-        messages: [
-          {
-            role: "system",
+${todayPlan.topics
+  .map((topic) => `- ${topic}`)
+  .join("\n")}
 
-            content:
-              "You are NeuroLearn AI, an expert study coach.",
-          },
-
-          {
-            role: "user",
-
-            content: `
-Today's Study Day: ${currentDay}
-
-Days Remaining Until Exam: ${daysLeft}
-
-Study Hours Available: ${studyPlan.hoursPerDay}
-
-Recommended Quiz Difficulty: ${difficulty}
+Recommended Quiz Difficulty:
+${difficulty}
 
 Weak Topics:
-
-${topicList}
-
-Generate ONLY today's study schedule.
-
-Requirements:
-
-1. Divide study into sessions.
-
-2. Mention exact topics.
-
-3. Add objectives.
-
-4. Add practice tasks.
-
-5. Add revision.
-
-6. Add one motivational sentence.
-
-Finally write exactly:
-
-Today's Topics:
-- Topic 1
-- Topic 2
-
-Do not generate tomorrow's plan.
-`,
-          },
-        ],
-      })
+${weakTopicsText}
+`
 
     res.status(200).json({
       currentDay,
       daysLeft,
       difficulty,
-      plan:
-        completion.choices[0].message
-          .content,
+      plan,
+      topics: todayPlan.topics,
     })
   } catch (error) {
     console.error(error)
@@ -254,24 +298,35 @@ const completeTodayPlan = async (
             24)
       ) + 1
 
-    const alreadyCompleted =
-      studyPlan.completedDays.find(
-        (day) =>
-          day.day === currentDay
-      )
+    const todayPlan = studyPlan.dailyPlans.find(
+  (plan) => plan.day === currentDay
+)
 
-    if (alreadyCompleted) {
-      return res.status(400).json({
-        message:
-          "Today's study plan is already completed.",
-      })
-    }
+if (!todayPlan) {
+  return res.status(404).json({
+    message: "No study plan found for today.",
+  })
+}
 
-    studyPlan.completedDays.push({
-      day: currentDay,
-    })
+if (todayPlan.completed) {
+  return res.status(400).json({
+    message: "Today's study plan is already completed.",
+  })
+}
 
-    await studyPlan.save()
+todayPlan.completed = true
+
+if (
+  !studyPlan.completedDays.some(
+    (day) => day.day === currentDay
+  )
+) {
+  studyPlan.completedDays.push({
+    day: currentDay,
+  })
+}
+
+await studyPlan.save()
 
     res.status(200).json({
       message:
@@ -332,7 +387,9 @@ const getProgress = async (
       ) + 1
 
     const completedDays =
-      studyPlan.completedDays.length
+  studyPlan.dailyPlans.filter(
+    (plan) => plan.completed
+  ).length
 
     const remainingDays =
       Math.max(

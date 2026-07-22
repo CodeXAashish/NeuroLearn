@@ -5,15 +5,6 @@ const QuizAttempt = require("../models/QuizAttempt")
 
 const getDashboardAnalytics = async (req, res) => {
 
-  console.log("Logged in user:", req.user._id)
-
-const attempts = await QuizAttempt.find({
-  user: req.user._id,
-})
-
-console.log("Attempts:", attempts)
-
-
   try {
     const userId = req.user._id
 

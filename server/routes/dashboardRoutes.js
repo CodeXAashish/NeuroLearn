@@ -7,8 +7,15 @@ const {
 
 const {
   getHeroData,
+  getContinueLearning,
 } = require("../controllers/dashboardController")
 
 router.get("/hero", protect, getHeroData)
+
+router.get(
+  "/continue-learning",
+  protect,
+  getContinueLearning
+)
 
 module.exports = router

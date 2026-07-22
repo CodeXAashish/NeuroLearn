@@ -32,6 +32,20 @@ const studyPlanSchema = new mongoose.Schema(
         },
       },
     ],
+    dailyPlans: [
+  {
+    day: Number,
+
+    date: Date,
+
+    topics: [String],
+
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+  },
+ ],
   },
   {
     timestamps: true,

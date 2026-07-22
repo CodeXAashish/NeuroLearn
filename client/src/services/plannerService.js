@@ -32,7 +32,7 @@ export const getTodayPlan = async () => {
 }
 
 export const completeTodayPlan = async () => {
-  const response = await axios.post(
+  const response = await axios.put(
     `${API}/complete`,
     {},
     getAuthConfig()
