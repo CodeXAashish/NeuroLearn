@@ -141,10 +141,17 @@ function WelcomeSection() {
               👋 Welcome Back
             </span>
 
-            <span className="flex items-center gap-2 rounded-full bg-orange-500/20 px-4 py-2 text-sm text-orange-300">
+            <motion.span
+  animate={{ scale: [1, 1.05, 1] }}
+  transition={{
+    repeat: Infinity,
+    duration: 2.5,
+  }}
+  className="flex items-center gap-2 rounded-full bg-orange-500/20 px-4 py-2 text-sm text-orange-300"
+>
               <FaFire />
               {heroData.streak} Day Streak
-            </span>
+            </motion.span>
           </div>
 
           <h1 className="text-4xl font-black text-white">
@@ -152,11 +159,12 @@ function WelcomeSection() {
           </h1>
 
           <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-            Continue your AI-powered learning journey.
-            Complete today's tasks to improve your
-            performance and stay on track for your
-            exam.
-          </p>
+  {heroData.progress >= 80
+    ? "You're in the final stretch. Finish your remaining topics and revise with confidence."
+    : heroData.progress >= 50
+    ? "You're making steady progress. Stay consistent and keep building your mastery."
+    : "Let's build your study habit one session at a time. Consistency beats intensity."}
+</p>
 
           <div className="mt-6 flex flex-wrap gap-4">
             <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-slate-300">
@@ -223,6 +231,13 @@ function WelcomeSection() {
          Continue Learning
         <FaArrowRight />
         </button>
+        <p className="mt-4 text-sm text-slate-400">
+  {heroData.progress >= 80
+    ? "🔥 You're almost ready for your exam!"
+    : heroData.progress >= 50
+    ? "🚀 Great progress! Keep the momentum going."
+    : "💡 Every study session gets you closer to your goal."}
+</p>
         </motion.div>
       </div>
     </motion.section>

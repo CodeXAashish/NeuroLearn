@@ -75,22 +75,35 @@ const handleResume = () => {
 
           </h2>
 
-          <p className="mt-3 text-slate-400">
+          <div className="mt-3 space-y-1">
+  <p className="text-slate-400">
+    Last studied {data.lastStudied}
+  </p>
 
-            Last studied {data.lastStudied}
-
-          </p>
+  <p className="text-sm text-cyan-300">
+    Continue where you left off and keep your learning streak alive.
+  </p>
+</div>
 
         </div>
 
-        <div className="rounded-2xl bg-cyan-500/10 p-5">
+        <motion.div
+  animate={{
+    y: [0, -6, 0],
+  }}
+  transition={{
+    repeat: Infinity,
+    duration: 3,
+  }}
+  className="rounded-2xl bg-cyan-500/10 p-5"
+>
 
           <FaBookOpen
             size={42}
             className="text-cyan-400"
           />
 
-        </div>
+        </motion.div>
 
       </div>
 
@@ -98,14 +111,15 @@ const handleResume = () => {
 
       <div className="mt-8">
 
-        <div className="mb-2 flex justify-between text-sm text-slate-400">
+        <div className="mb-2 flex justify-between text-sm">
+  <span className="text-slate-400">
+    Learning Progress
+  </span>
 
-          <span>Progress</span>
-
-          <span>{data.progress}%</span>
-
-        </div>
-
+  <span className="font-semibold text-cyan-300">
+    {data.progress}%
+  </span>
+</div>
         <div className="h-3 rounded-full bg-slate-700">
 
           <motion.div
@@ -127,18 +141,17 @@ const handleResume = () => {
 
       <div className="mt-8 flex items-center justify-between">
 
-        <div className="text-slate-400">
-  <span>
-    Status:{" "}
-    <span
-      className={
-        data.status === "Completed"
-          ? "text-green-400 font-semibold"
-          : "text-yellow-400 font-semibold"
-      }
-    >
-      {data.status}
-    </span>
+        <div className="flex items-center gap-3">
+  <span className="text-slate-400">Status</span>
+
+  <span
+    className={`rounded-full px-3 py-1 text-sm font-semibold ${
+      data.status === "Completed"
+        ? "bg-green-500/20 text-green-400"
+        : "bg-yellow-500/20 text-yellow-300"
+    }`}
+  >
+    {data.status}
   </span>
 </div>
         <button onClick={handleResume}

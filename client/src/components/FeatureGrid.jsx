@@ -73,22 +73,29 @@ function FeatureGrid() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.08 }}
           whileHover={{
-            y: -6,
-            scale: 1.02,
+            y: -10,
+            scale: 1.03,
           }}
         >
 
           <Link
-            to={feature.link}
-            className={`block rounded-3xl border border-slate-800 bg-slate-900/70 p-6 backdrop-blur-xl shadow-lg transition-all duration-300 ${feature.glow} hover:border-cyan-400 hover:shadow-2xl`}
-          >
+  to={feature.link}
+  className={`block rounded-3xl border border-slate-800 bg-slate-900/70 p-6 backdrop-blur-xl shadow-lg transition-all duration-300 ${feature.glow} hover:border-cyan-400/60 hover:shadow-2xl hover:shadow-cyan-500/10`}
+>
 
-            <div
-              className={`mb-5 text-5xl ${feature.color}`}
-            >
-              {feature.icon}
-            </div>
-
+            <motion.div
+  whileHover={{
+    rotate: 8,
+    scale: 1.1,
+  }}
+  transition={{
+    type: "spring",
+    stiffness: 300,
+  }}
+  className={`mb-5 text-5xl ${feature.color}`}
+>
+  {feature.icon}
+</motion.div>
             <h3 className="text-2xl font-bold text-white">
               {feature.title}
             </h3>
@@ -96,6 +103,9 @@ function FeatureGrid() {
             <p className="mt-3 text-slate-400">
               {feature.description}
             </p>
+            <p className="mt-6 flex items-center gap-2 text-sm font-medium text-cyan-400">
+  Open Module →
+</p>
 
           </Link>
 

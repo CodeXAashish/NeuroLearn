@@ -17,24 +17,15 @@ const getHeroData = async (req, res) => {
       })
     }
 
-    const today = new Date()
+    const totalDays = studyPlan.dailyPlans.length
 
-    const startDate = new Date(studyPlan.startDate)
-    const examDate = new Date(studyPlan.examDate)
+const nextPlan = studyPlan.dailyPlans.find(
+  (plan) => !plan.completed
+)
 
-    const totalDays =
-      Math.ceil(
-        (examDate - startDate) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
-
-    const currentDay = Math.max(
-      Math.floor(
-        (today - startDate) /
-          (1000 * 60 * 60 * 24)
-      ) + 1,
-      1
-    )
+const currentDay = nextPlan
+  ? nextPlan.day
+  : totalDays
 
     const completedDays =
       studyPlan.completedDays.length
@@ -75,17 +66,9 @@ const getContinueLearning = async (req, res) => {
       })
     }
 
-    const today = new Date()
-
-    const currentDay =
-      Math.floor(
-        (today - new Date(studyPlan.startDate)) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
-
     const todayPlan = studyPlan.dailyPlans.find(
-      (plan) => plan.day === currentDay
-    )
+  (plan) => !plan.completed
+)
 
     if (!todayPlan) {
       return res.json({

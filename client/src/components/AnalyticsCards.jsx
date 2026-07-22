@@ -11,6 +11,7 @@ function AnalyticsCards({ analytics }) {
       title: "Total Quizzes",
       value: analytics.totalQuizzes,
       subtitle: "Completed",
+      trend: "Keep practicing",
       icon: <FaClipboardCheck />,
       color: "from-cyan-500 to-blue-500",
     },
@@ -18,6 +19,7 @@ function AnalyticsCards({ analytics }) {
       title: "Average Score",
       value: `${analytics.averageScore}%`,
       subtitle: "Overall Performance",
+      trend: "Excellent",
       icon: <FaBullseye />,
       color: "from-green-500 to-emerald-500",
     },
@@ -25,6 +27,7 @@ function AnalyticsCards({ analytics }) {
       title: "Weak Topics",
       value: analytics.weakTopics.length,
       subtitle: "Need Revision",
+      trend: "Need attention",
       icon: <FaExclamationTriangle />,
       color: "from-orange-500 to-red-500",
     },
@@ -50,9 +53,12 @@ function AnalyticsCards({ analytics }) {
           }}
           whileHover={{
             y: -5,
+            scale: 1.02
           }}
-          className="rounded-3xl border border-slate-800 bg-slate-900/70 p-6 backdrop-blur-xl shadow-lg"
-        >
+          className="rounded-3xl border border-slate-800
+           bg-slate-900/70 p-6 backdrop-blur-xl shadow-lg 
+           transition-all duration-300 hover:border-cyan-500/40 
+           hover:shadow-cyan-500/10">
 
           <div className="flex items-center justify-between">
 
@@ -72,11 +78,19 @@ function AnalyticsCards({ analytics }) {
 
             </div>
 
-            <div
-              className={`rounded-2xl bg-gradient-to-r ${card.color} p-4 text-2xl text-white`}
-            >
-              {card.icon}
-            </div>
+            <motion.div
+  whileHover={{
+    rotate: 8,
+    scale: 1.1,
+  }}
+  transition={{
+    type: "spring",
+    stiffness: 300,
+  }}
+  className={`rounded-2xl bg-gradient-to-r ${card.color} p-4 text-2xl text-white shadow-lg`}
+>
+  {card.icon}
+</motion.div>
 
           </div>
 

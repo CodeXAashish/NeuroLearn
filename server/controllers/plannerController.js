@@ -143,30 +143,25 @@ const getTodayPlan = async (req, res) => {
     }
 
     const today = new Date()
+const examDate = new Date(studyPlan.examDate)
 
-    const startDate = new Date(studyPlan.startDate)
-    const examDate = new Date(studyPlan.examDate)
+const todayPlan = studyPlan.dailyPlans.find(
+  (plan) => !plan.completed
+)
 
-    const currentDay =
-      Math.floor(
-        (today - startDate) /
-          (1000 * 60 * 60 * 24)
-      ) + 1
+if (!todayPlan) {
+  return res.status(200).json({
+    currentDay: studyPlan.dailyPlans.length,
+    daysLeft: 0,
+    difficulty: "Hard",
+    plan: "Congratulations! You have completed your entire study plan.",
+    topics: [],
+  })
+}
 
-    const daysLeft = Math.max(
-      Math.ceil(
-        (examDate - today) /
-          (1000 * 60 * 60 * 24)
-      ),
-      0
-    )
+const currentDay = todayPlan.day
 
-    // Today's saved plan
-    const todayPlan =
-      studyPlan.dailyPlans.find(
-        (plan) => plan.day === currentDay
-      )
-
+const daysLeft = studyPlan.dailyPlans.length - currentDay
     if (!todayPlan) {
       return res.status(404).json({
         message: "No study plan found for today.",
@@ -267,10 +262,7 @@ ${weakTopicsText}
 // Complete Today's Plan
 // ===============================
 
-const completeTodayPlan = async (
-  req,
-  res
-) => {
+const completeTodayPlan = async (req,res) => {
   try {
     const studyPlan =
   await StudyPlan.findOne({
@@ -286,22 +278,17 @@ const completeTodayPlan = async (
 
     const today = new Date()
 
-    const currentDay =
-      Math.floor(
-        (today -
-          new Date(
-            studyPlan.startDate
-          )) /
-          (1000 *
-            60 *
-            60 *
-            24)
-      ) + 1
-
     const todayPlan = studyPlan.dailyPlans.find(
-  (plan) => plan.day === currentDay
+  (plan) => !plan.completed
 )
 
+if (!todayPlan) {
+  return res.status(400).json({
+    message: "All study plans are already completed.",
+  })
+}
+
+const currentDay = todayPlan.day
 if (!todayPlan) {
   return res.status(404).json({
     message: "No study plan found for today.",
@@ -348,10 +335,7 @@ await studyPlan.save()
 // Progress API
 // ===============================
 
-const getProgress = async (
-  req,
-  res
-) => {
+const getProgress = async (req,res) => {
   try {
    const studyPlan =
   await StudyPlan.findOne({
@@ -366,13 +350,9 @@ const getProgress = async (
 
     const today = new Date()
 
-    const startDate = new Date(
-      studyPlan.startDate
-    )
+    const startDate = new Date(studyPlan.startDate)
 
-    const examDate = new Date(
-      studyPlan.examDate
-    )
+    const examDate = new Date(studyPlan.examDate  )
 
     const currentDay =
       Math.floor(

@@ -46,11 +46,11 @@ function DashboardNavbar() {
       path: "/chat",
       icon: <FaComments />,
     },
-    {
-      name: "Analytics",
-      path: "/analytics",
-      icon: <FaChartBar />,
-    },
+    // {
+    //   name: "Analytics",
+    //   path: "/analytics",
+    //   icon: <FaChartBar />,
+    // },
   ]
 
   return (
