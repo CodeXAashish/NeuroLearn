@@ -13,27 +13,35 @@ const getDashboardAnalytics = async (req, res) => {
         user: userId,
       })
 
-    const averageScoreData =
-      await QuizAttempt.aggregate([
-        {
-          $match: {
-            user: userId,
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            averageScore: {
-              $avg: "$score",
-            },
-          },
-        },
-      ])
+    const averageScoreData = await QuizAttempt.aggregate([
+  {
+    $match: {
+      user: userId,
+    },
+  },
+  {
+    $group: {
+      _id: null,
+      totalCorrect: {
+        $sum: "$score",
+      },
+      totalQuestions: {
+        $sum: "$totalQuestions",
+      },
+    },
+  },
+])
 
-    const averageScore =
-      averageScoreData.length > 0
-        ? averageScoreData[0].averageScore
-        : 0
+const averageScore =
+  averageScoreData.length > 0 &&
+  averageScoreData[0].totalQuestions > 0
+    ? (
+        (averageScoreData[0].totalCorrect /
+          averageScoreData[0].totalQuestions) *
+        100
+      )
+    : 0
+
 
     const weakTopics =
       await Mistake.aggregate([
