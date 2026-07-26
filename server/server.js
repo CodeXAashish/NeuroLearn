@@ -17,7 +17,7 @@ const notesRoutes = require("./routes/notesRoutes")
 const flashcardRoutes = require("./routes/flashcardRoutes")
 const dashboardRoutes =  require("./routes/dashboardRoutes")
 
-
+const chatContextRoutes = require("./routes/chatContextRoutes");
 
 const app = express()
 connectDB()
@@ -39,7 +39,7 @@ app.use("/api/flashcards", flashcardRoutes)
 
 app.use("/api/dashboard",dashboardRoutes)
 
-
+app.use("/api/chat/context", chatContextRoutes);
 
 app.get("/", (req, res) => {
   res.send("NeuroLearn API Running...")

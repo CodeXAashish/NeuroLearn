@@ -24,3 +24,12 @@ export const sendMessage = async (
 
   return response.data
 }
+
+export const getStudyContext = async () => {
+  const response = await axios.get(
+    `${API_URL}/context`,
+    getAuthConfig()
+  );
+
+  return response.data;
+};

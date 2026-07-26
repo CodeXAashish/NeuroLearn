@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Bot, User, SendHorizontal } from "lucide-react";
-import { sendMessage } from "../services/chatService";
+import { sendMessage , getStudyContext } from "../services/chatService";
+import { getAnalytics } from "../services/analyticsService";
 
 function Chat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [studyContext, setStudyContext] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -14,6 +17,11 @@ function Chat() {
       behavior: "smooth",
     });
   }, [messages, loading]);
+
+  useEffect(() => {
+  fetchStudyContext();
+  fetchAnalytics();
+}, []);
 
   const suggestedPrompts = [
     "Explain today's study topic",
@@ -35,17 +43,114 @@ function Chat() {
     setLoading(true);
 
     try {
-      const conversation = [
-        ...messages.map((msg) => ({
-          role: msg.sender === "user" ? "user" : "assistant",
-          content: msg.text,
-        })),
-        {
-          role: "user",
-          content: message,
-        },
-      ];
+      let enhancedMessage = message;
 
+// Today's Topic
+if (
+  message.toLowerCase().includes("today's topic") ||
+  message.toLowerCase().includes("today topic")
+) {
+  enhancedMessage = `
+Explain today's study topic in detail in a beginner-friendly way.
+
+Today's Topics:
+${studyContext?.todayTopics?.join("\n") || "None"}
+
+Student's Request:
+${message}
+`;
+}
+
+// Quiz
+if (
+  message.toLowerCase().includes("quiz") ||
+  message.toLowerCase().includes("test me")
+) {
+  enhancedMessage = `
+Generate a quiz for the student.
+
+Today's Topics:
+${studyContext?.todayTopics?.join("\n") || "None"}
+
+Weak Topics:
+${studyContext?.weakTopics?.join("\n") || "None"}
+
+Instructions:
+- Generate 5 multiple-choice questions.
+- Prioritize Today's Topics.
+- If Today's Topics are unavailable, use Weak Topics.
+- Ask only ONE question at a time.
+- Wait for the student's answer before asking the next question.
+- At the end, calculate the score and explain every incorrect answer.
+
+Student's Request:
+${message}
+`;
+}
+
+// Weak Topics
+if (
+  message.toLowerCase().includes("weak topic") ||
+  message.toLowerCase().includes("revise")
+) {
+  enhancedMessage = `
+Help the student revise their weak topics.
+
+Weak Topics:
+${studyContext?.weakTopics?.join("\n") || "None"}
+
+Explain each topic simply with examples and give a few practice questions.
+
+Student's Request:
+${message}
+`;
+}
+     const conversation = [
+       {
+         role: "system",
+         content: `You are NeuroLearn AI Tutor.
+
+You are a personalized study assistant.
+
+Always use the student's current study context when answering.
+
+Rules:
+- Explain concepts in a simple, beginner-friendly way.
+- If the user asks for today's topic, use Today's Topics.
+- If the user asks for revision, prioritize Weak Topics.
+- Give examples whenever possible.
+- If appropriate, suggest practice questions.
+- Keep answers clear and structured.
+
+Current Day: ${studyContext?.currentDay || "N/A"}
+
+Today's Topics:
+${studyContext?.todayTopics?.join("\n") || "None"}
+
+Weak Topics:
+${studyContext?.weakTopics?.join("\n") || "None"}
+
+Average Score:
+${analytics?.averageScore || "N/A"}%
+
+Teaching Style:
+
+- If the average score is below 50%, explain concepts very simply with basic examples.
+- If the average score is between 50% and 80%, explain concepts normally and include practice questions.
+- If the average score is above 80%, provide more advanced explanations, challenging questions, and interview-oriented tips.
+`,
+    },
+
+  ...messages.map((msg) => ({
+    role: msg.sender === "user" ? "user" : "assistant",
+    content: msg.text,
+  })),
+
+  {
+    role: "user",
+    content: enhancedMessage,
+  },
+];
       const data = await sendMessage(conversation);
 
       const aiMessage = {
@@ -62,6 +167,25 @@ function Chat() {
 
     setLoading(false);
   };
+
+  const fetchStudyContext = async () => {
+  try {
+    const data = await getStudyContext();
+    console.log(data);
+    setStudyContext(data);
+  } catch (error) {
+    console.error("Failed to load study context:", error);
+  }
+ };
+
+ const fetchAnalytics = async () => {
+  try {
+    const data = await getAnalytics();
+    setAnalytics(data);
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#020617] text-white">
@@ -103,8 +227,10 @@ function Chat() {
           </p>
 
           <h3 className="mt-1 text-lg font-semibold text-cyan-300">
-            Day 7
-          </h3>
+  {studyContext?.currentDay
+    ? `Day ${studyContext.currentDay}`
+    : "No active study plan"}
+</h3>
         </div>
 
         <div>
@@ -112,9 +238,22 @@ function Chat() {
             Today's Topic
           </p>
 
-          <h3 className="mt-1 font-semibold">
-            Java Interfaces
-          </h3>
+          <div className="mt-2 space-y-2">
+  {studyContext?.todayTopics?.length ? (
+    studyContext.todayTopics.map((topic) => (
+      <div
+        key={topic}
+        className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-cyan-300"
+      >
+        {topic}
+      </div>
+    ))
+  ) : (
+    <p className="text-slate-400">
+      No topics for today
+    </p>
+  )}
+</div>
         </div>
 
         <div>
@@ -123,14 +262,21 @@ function Chat() {
           </p>
 
           <div className="mt-3 space-y-2">
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-red-300">
-              Arrays
-            </div>
-
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-red-300">
-              Pointers
-            </div>
-          </div>
+  {studyContext?.weakTopics?.length ? (
+    studyContext.weakTopics.map((topic) => (
+      <div
+  key={topic}
+  className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-2 text-cyan-300 line-clamp-3"
+>
+  {topic}
+</div>
+    ))
+  ) : (
+    <p className="text-slate-400">
+      No weak topics 🎉
+    </p>
+  )}
+</div>
         </div>
 
         <div>
@@ -139,7 +285,7 @@ function Chat() {
           </p>
 
           <h3 className="mt-1 text-lg font-bold text-green-400">
-            84%
+            {analytics ? `${analytics.averageScore}%` : "0%"}
           </h3>
         </div>
 
@@ -293,7 +439,6 @@ function Chat() {
             </div>
 
           </div>
-                    {/* Right Side - Study Context */}
 
         </div>
 
