@@ -1,11 +1,17 @@
-const express = require("express")
+const express = require("express");
+const router = express.Router();
 
 const {
   saveMistake,
-} = require("../controllers/mistakeController")
+  getMistakes,
+  resolveMistake,
+  explainMistake,
+} = require("../controllers/mistakeController");
 
-const router = express.Router()
+const { protect } = require("../middleware/authMiddleware");
+router.get("/", protect, getMistakes);
+router.post("/", saveMistake);
+router.put("/:id/resolve", protect, resolveMistake);
+router.post("/explain", protect, explainMistake);
 
-router.post("/", saveMistake)
-
-module.exports = router
+module.exports = router;

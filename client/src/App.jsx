@@ -14,6 +14,8 @@ import Flashcards from "./pages/Flashcards"
 import UploadSyllabus from "./pages/UploadSyllabus"
 import StudyMaterials from "./pages/StudyMaterials"
 
+import MistakeReview from "./pages/MistakeReview";
+
 
 function App() {
   return (
@@ -85,6 +87,10 @@ function App() {
                 <StudyMaterials />
              </ProtectedRoute>
   }
+/>
+<Route
+  path="/mistakes"
+  element={<MistakeReview />}
 />
   </Routes>
   )

@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
 import {
+  FaRobot,
   FaBrain,
   FaHome,
   FaBook,
@@ -10,6 +11,8 @@ import {
   FaChartBar,
   FaBell,
   FaUserCircle,
+  FaExclamationTriangle
+  
 } from "react-icons/fa"
 
 function DashboardNavbar() {
@@ -51,6 +54,12 @@ function DashboardNavbar() {
     //   path: "/analytics",
     //   icon: <FaChartBar />,
     // },
+    {
+  name: "Mistakes",
+  path: "/mistakes",
+  icon: <FaExclamationTriangle />,
+},
+    
   ]
 
   return (

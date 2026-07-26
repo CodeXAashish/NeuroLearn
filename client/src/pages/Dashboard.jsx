@@ -198,10 +198,13 @@ function Dashboard() {
         }}
       >
         <XAxis
-          dataKey="topic"
-          stroke="#94a3b8"
-        />
-
+  dataKey="topic"
+  stroke="#94a3b8"
+  angle={-25}
+  textAnchor="end"
+  interval={0}
+  height={70}
+/>
         <YAxis stroke="#94a3b8" />
 
         <Tooltip
