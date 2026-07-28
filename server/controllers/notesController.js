@@ -9,30 +9,52 @@ const generateNotes = async (req, res) => {
         model: "openai/gpt-3.5-turbo",
 
         messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert university professor.",
-          },
-          {
-            role: "user",
-            content: `
-Generate ${type} notes on:
+  {
+    role: "system",
+    content: `You are an expert educational content generator.
 
-${topic}
+Always return ONLY valid JSON.
 
-Requirements:
+Never return Markdown.
 
-• Easy to understand
-• Well formatted
-• Use headings
-• Use bullet points
-• Include examples
-• If possible include diagrams using text
-• Suitable for university exams
-`,
-          },
-        ],
+Never return plain text.
+
+Follow the JSON schema exactly.`
+  },
+  {
+    role: "user",
+    content: `
+Generate ${type} notes for the topic: "${topic}".
+
+The notes must focus ONLY on the given topic.
+
+Return ONLY valid JSON.
+
+JSON Schema:
+
+{
+  "title": "",
+  "introduction": "",
+  "sections": [
+    {
+      "heading": "",
+      "content": ""
+    }
+  ],
+  "importantExamPoints": [],
+  "quickRevision": []
+}
+
+Rules:
+
+- Always fill every field.
+- Never leave sections empty.
+- For broad topics (Operating System, DBMS, Java), create at least 8 sections.
+- For specific topics (Types of Operating System, Deadlock, Binary Search), create sections specific to that topic.
+- Do not return anything except the JSON object.
+`
+  }
+],
       })
 
     res.status(200).json({
@@ -40,12 +62,16 @@ Requirements:
         completion.choices[0].message.content,
     })
   } catch (error) {
-    console.log(error)
+  console.error("Full Error:", error);
 
-    res.status(500).json({
-      message: error.message,
-    })
+  if (error.response) {
+    console.error("Response:", error.response.data);
   }
+
+  res.status(500).json({
+    message: error.message,
+  });
+}
 }
 
 module.exports = {
