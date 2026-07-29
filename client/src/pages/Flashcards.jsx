@@ -50,11 +50,20 @@ function Flashcards() {
       : 0
 
   return (
-    <div className="min-h-screen bg-black text-white p-10">
+    <div className="min-h-screen bg-black text-white px-4 py-8 sm:px-6 lg:px-10">
 
-      <h1 className="text-4xl font-bold text-center mb-10">
-        🃏 AI Flashcards
-      </h1>
+     <div className="text-center mb-10">
+
+  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
+    🃏 AI Flashcards
+  </h1>
+
+  <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+    Generate AI-powered flashcards to memorize concepts faster,
+    revise efficiently, and strengthen long-term memory.
+  </p>
+
+</div>
 
       {/* Input Section */}
 
@@ -69,20 +78,20 @@ function Flashcards() {
         />
 
         <button
-          onClick={handleGenerate}
-          className="bg-blue-600 hover:bg-blue-700 transition w-full py-3 rounded font-semibold"
-        >
-          {loading
-            ? "Generating..."
-            : "Generate Flashcards"}
-        </button>
-
+  onClick={handleGenerate}
+  disabled={loading || !topic.trim()}
+  className="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 transition font-semibold"
+>
+  {loading
+    ? "⚡ Generating Flashcards..."
+    : "✨ Generate Flashcards"}
+</button>
       </div>
 
       {completed && (
       <div className="max-w-3xl mx-auto mt-10 bg-zinc-900 rounded-2xl p-10 text-center">
 
-    <h1 className="text-5xl font-bold text-green-400 mb-6">
+    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-green-400 mb-6">
       🎉 Congratulations!
     </h1>
 
@@ -149,7 +158,7 @@ function Flashcards() {
               onClick={() =>
                 setShowAnswer(!showAnswer)
               }
-              className="relative w-full h-80 cursor-pointer transition-transform duration-700"
+              className="relative w-full h-[300px] sm:h-80 cursor-pointer transition-transform duration-700 hover:scale-[1.02]"
               style={{
                 transformStyle:
                   "preserve-3d",
@@ -162,7 +171,7 @@ function Flashcards() {
               {/* Front */}
 
               <div
-                className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl flex flex-col justify-center items-center p-8"
+                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col justify-center items-center p-8"
                 style={{
                   backfaceVisibility:
                     "hidden",
@@ -171,11 +180,17 @@ function Flashcards() {
                 }}
               >
 
-                <h2 className="text-xl font-bold mb-5">
-                  🃏 Question
-                </h2>
+               <div className="mb-6">
+  <span className="bg-white/20 px-4 py-1 rounded-full text-sm">
+    Card {currentCard + 1}
+  </span>
+</div>
 
-                <p className="text-2xl text-center">
+<h2 className="text-2xl font-bold mb-6">
+  🃏 Question
+</h2>
+
+                <p className="text-3xl font-semibold text-center leading-relaxed">
                   {cards[currentCard].question}
                 </p>
 
@@ -188,7 +203,7 @@ function Flashcards() {
               {/* Back */}
 
               <div
-                className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-700 shadow-2xl flex flex-col justify-center items-center p-8"
+                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-green-600 to-emerald-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col justify-center items-center p-8"
                 style={{
                   transform:
                     "rotateY(180deg)",
@@ -199,11 +214,11 @@ function Flashcards() {
                 }}
               >
 
-                <h2 className="text-xl font-bold mb-5">
+                <h2 className="text-2xl font-bold mb-6">
                   🧠 Answer
                 </h2>
 
-                <p className="text-xl text-center">
+                <p className="text-2xl leading-relaxed text-center">
                   {cards[currentCard].answer}
                 </p>
 
@@ -219,23 +234,24 @@ function Flashcards() {
 
           {/* Navigation */}
 
-          <div className="flex justify-between mt-10">
+          <div className="flex flex-col sm:flex-row gap-4 justify-between mt-10">
 
             <button
-              onClick={previousCard}
-              disabled={currentCard === 0}
-              className="bg-zinc-700 px-6 py-3 rounded disabled:opacity-40"
-            >
-              ⬅ Previous
-            </button>
+  onClick={previousCard}
+  disabled={currentCard === 0}
+  className="w-full sm:w-auto bg-zinc-700 hover:bg-zinc-600 px-6 py-3 rounded-lg disabled:opacity-40 transition"
+>
+  ⬅ Previous
+</button>
 
-            <button
-              onClick={nextCard}
-              className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded">
-              {currentCard === cards.length - 1
-               ? "Finish 🎉"
-               : "Next ➡"}
-            </button>
+<button
+  onClick={nextCard}
+  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg transition"
+>
+  {currentCard === cards.length - 1
+    ? "Finish 🎉"
+    : "Next ➡"}
+</button>
 
           </div>
 

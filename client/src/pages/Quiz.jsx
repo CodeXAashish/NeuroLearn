@@ -10,8 +10,7 @@ function Quiz() {
   const location = useLocation()
 
   const [topic, setTopic] = useState("")
-  const [difficulty, setDifficulty] =
-    useState("easy")
+  const [difficulty, setDifficulty] = useState("easy")
 
   const [quiz, setQuiz] = useState([])
 
@@ -53,6 +52,7 @@ function Quiz() {
 
     const data = await generateQuiz({
       topic: selectedTopic,
+      difficulty: selectedDifficulty,
     })
 
     setQuiz(data.quiz)
@@ -73,6 +73,7 @@ function Quiz() {
 
         const data = await generateQuiz({
             topic,
+            difficulty,
           })
 
         setQuiz(data.quiz)
@@ -124,13 +125,19 @@ const interval = setInterval(() => {
   return (
     <div className="min-h-screen bg-black text-white p-10">
 
-      <h1 className="text-4xl font-bold mb-8">
-        AI Quiz Generator 🚀
-      </h1>
+     <div className="text-center mb-10">
+  <h1 className="text-5xl font-bold mb-4">
+    🧠 AI Quiz Generator
+  </h1>
 
+  <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+    Test your knowledge with AI-generated multiple-choice questions
+    tailored to your selected topic.
+  </p>
+</div>
       {/* Topic */}
 
-      <div className="max-w-xl space-y-4">
+      <div className="max-w-xl  mx-auto space-y-4">
 
         <input
           type="text"
@@ -141,18 +148,26 @@ const interval = setInterval(() => {
           }
           className="w-full p-3 rounded bg-zinc-900"
         />
+        <select
+  value={difficulty}
+  onChange={(e) => setDifficulty(e.target.value)}
+  className="w-full p-3 rounded bg-zinc-900"
+>
+  <option value="easy">🟢 Easy</option>
+  <option value="medium">🟡 Medium</option>
+  <option value="hard">🔴 Hard</option>
+</select>
 
 
         <button
-          onClick={
-            handleGenerateQuiz
-          }
-          className="bg-blue-600 px-6 py-3 rounded"
-        >
-          {loading
-            ? "Generating..."
-            : "Generate Quiz"}
-        </button>
+  onClick={handleGenerateQuiz}
+  disabled={loading || !topic.trim()}
+  className="w-full bg-cyan-600 hover:bg-cyan-700 py-3 rounded-xl font-semibold disabled:opacity-50"
+>
+  {loading
+    ? "⚡ Generating Quiz..."
+    : "✨ Generate Quiz"}
+</button>
 
       </div>
 
@@ -174,32 +189,30 @@ const interval = setInterval(() => {
               {q.options.map(
                 (option) => (
                   <label
-                    key={option}
-                    className="block mb-2 cursor-pointer"
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${index}`}
-                      value={
-                        option
-                      }
-                      checked={
-                        answers[index] ===
-                        option
-                      }
-                      onChange={() =>
-                        setAnswers({
-                          ...answers,
-                          [index]:
-                            option,
-                        })
-                      }
-                    />
+  key={option}
+  className={`block p-4 rounded-xl border cursor-pointer mb-3 transition
+    ${
+      answers[index] === option
+        ? "bg-blue-600 border-blue-500"
+        : "bg-zinc-800 border-zinc-700 hover:border-blue-400"
+    }`}
+>
+  <input
+    type="radio"
+    className="hidden"
+    name={`question-${index}`}
+    value={option}
+    checked={answers[index] === option}
+    onChange={() =>
+      setAnswers({
+        ...answers,
+        [index]: option,
+      })
+    }
+  />
 
-                    <span className="ml-2">
-                      {option}
-                    </span>
-                  </label>
+  {option}
+</label>
                 )
               )}
             </div>

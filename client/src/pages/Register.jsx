@@ -12,6 +12,7 @@ import AuthCard from "../components/AuthCard"
 import AuthInput from "../components/AuthInput"
 
 function Register() {
+  const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -32,6 +33,7 @@ function Register() {
 
   try {
     const data = await registerUser({
+      name,
       email,
       password,
     })
@@ -111,6 +113,14 @@ function Register() {
         >
 
           <form onSubmit={handleSubmit}>
+
+            <AuthInput
+              label="Full Name"
+              type="text"
+               value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your full name"
+            />
 
             <AuthInput
               label="Email"

@@ -17,6 +17,7 @@ import {
 
 function DashboardNavbar() {
   const location = useLocation()
+  const user = JSON.parse(localStorage.getItem("user"))
 
   const navItems = [
     {
@@ -65,7 +66,7 @@ function DashboardNavbar() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-800 bg-[#020617]/90 backdrop-blur-xl">
 
-      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-8">
+      <div className="mx-auto flex h-20 max-w-screen-2xl items-center justify-between px-8">
 
         {/* Logo */}
 
@@ -106,7 +107,7 @@ function DashboardNavbar() {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`relative flex items-center gap-2 rounded-xl px-4 py-2 transition-all duration-300 ${
+                className={`relative flex items-center gap-1 rounded-xl px-3 py-2 transition-all duration-300 ${
                   active
                     ? "bg-cyan-500 text-black"
                     : "text-slate-300 hover:bg-slate-800 hover:text-cyan-400"
@@ -114,9 +115,9 @@ function DashboardNavbar() {
               >
                 {item.icon}
 
-                <span className="text-sm font-medium">
-                  {item.name}
-                </span>
+               <span className="whitespace-nowrap text-sm font-medium">
+    {item.name}
+</span>
 
                 {active && (
                   <motion.div
@@ -157,13 +158,13 @@ function DashboardNavbar() {
 
             <div className="hidden text-left md:block">
 
-              <p className="text-sm font-medium text-white">
-                Aashish
-              </p>
+             <p className="text-sm font-medium text-white">
+  {user?.name || "Student"}
+</p>
 
-              <p className="text-xs text-slate-400">
-                Student
-              </p>
+<p className="text-xs text-slate-400">
+  {user?.email || "No Email"}
+</p>
 
             </div>
 
