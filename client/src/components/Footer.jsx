@@ -98,19 +98,25 @@ function Footer() {
 
             <div className="flex gap-4">
 
-              <a
-                href="#"
-                className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-cyan-500 transition"
-              >
-                <FaGithub className="text-white text-xl" />
-              </a>
+             <a
+  href="https://github.com/CodeXAashish"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="GitHub"
+  className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-cyan-500 transition"
+>
+  <FaGithub className="text-white text-xl" />
+</a>
 
               <a
-                href="#"
-                className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-cyan-500 transition"
-              >
-                <FaLinkedin className="text-white text-xl" />
-              </a>
+  href="https://www.linkedin.com/in/ashishchauhan2"
+  target="_blank"
+  rel="noopener noreferrer"
+  aria-label="LinkedIn"
+  className="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-cyan-500 transition"
+>
+  <FaLinkedin className="text-white text-xl" />
+</a>
 
             </div>
 
