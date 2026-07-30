@@ -1,7 +1,7 @@
 import axios from "axios"
 
 const API_URL =
-  "http://localhost:5000/api/chat"
+  `${import.meta.env.VITE_API_URL}/api/chat`
 
 const getAuthConfig = () => {
   const token = localStorage.getItem("token")

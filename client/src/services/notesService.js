@@ -1,7 +1,7 @@
 import axios from "axios"
 
 const API =
-  "http://localhost:5000/api/notes"
+  `${import.meta.env.VITE_API_URL}/api/notes`
 
 export const generateNotes = async (data) => {
   const response =
