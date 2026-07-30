@@ -45,7 +45,7 @@ function Register() {
       JSON.stringify(data.user)
     )
 
-    navigate("/dashboard")
+    navigate("/login")
 
   } catch (error) {
     alert(
