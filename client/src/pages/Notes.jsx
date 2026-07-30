@@ -36,10 +36,10 @@ function Notes() {
   return (
     <div className="min-h-screen bg-black text-white p-10">
 
-      <div className="mb-8">
-  <h1 className="flex items-center gap-3 text-4xl font-bold text-white">
-    📚 AI Notes Generator
-  </h1>
+      <div className="mb-8 text-center">
+  <h1 className="text-4xl font-bold text-white">
+  📚 AI Notes Generator
+</h1>
 
   <p className="mt-2 text-slate-400">
     Generate AI-powered notes for exams, interviews, revision,
@@ -47,7 +47,7 @@ function Notes() {
   </p>
 </div>
 
-      <div className="bg-zinc-900 p-6 rounded-xl max-w-2xl">
+      <div className="bg-zinc-900 p-6 rounded-xl max-w-2xl mx-auto">
 
         <label className="block mb-2 font-semibold">
           Topic
@@ -153,7 +153,9 @@ function Notes() {
     icon="📘"
     title={section.heading}
   >
-    <p>{section.content}</p>
+    <p className="whitespace-pre-line">
+  {section.content}
+</p>
   </NotesSection>
 ))}
     </div>
