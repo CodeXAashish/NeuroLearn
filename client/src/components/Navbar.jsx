@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import { FaBrain } from "react-icons/fa"
+import { FaBrain, FaBars, FaTimes} from "react-icons/fa"
+import { useState } from "react"
 
 function Navbar() {
+    const [menuOpen, setMenuOpen] = useState(false)
   return (
     <motion.nav
       initial={{ y: -80 }}
@@ -54,29 +56,69 @@ function Navbar() {
 
         </div>
 
-        {/* Buttons */}
+        {/* Desktop */}
 
-        <div className="flex gap-4">
+<div className="hidden md:flex gap-4">
+  <Link
+    to="/login"
+    className="px-5 py-2 rounded-lg border border-slate-700 text-white hover:border-cyan-400 transition"
+  >
+    Sign In
+  </Link>
 
-          <Link
-            to="/login"
-            className="px-3 sm:px-5 py-2 text-sm sm:text-base rounded-lg border border-slate-700 text-white hover:border-cyan-400 transition"
-            >
-            Sign In
-          </Link>
+  <Link
+    to="/register"
+    className="px-5 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition"
+  >
+    Get Started
+  </Link>
+</div>
 
-          <Link
-            to="/register"
-           className="px-3 sm:px-5 py-2 text-sm sm:text-base rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-semibold transition shadow-lg shadow-cyan-500/30"
-           >
-            Get Started
-          </Link>
+{/* Mobile */}
 
-        </div>
+<button
+  className="md:hidden text-white text-2xl"
+  onClick={() => setMenuOpen(!menuOpen)}
+>
+  {menuOpen ? <FaTimes /> : <FaBars />}
+</button>
 
       </div>
+             {menuOpen && (
+  <div className="md:hidden bg-slate-900 border-t border-slate-800 px-6 py-6">
+
+    <a href="#features" className="block py-3 text-white">
+      Features
+    </a>
+
+    <a href="#about" className="block py-3 text-white">
+      About
+    </a>
+
+    <a href="#contact" className="block py-3 text-white">
+      Contact
+    </a>
+
+    <Link
+      to="/login"
+      className="block mt-4 rounded-lg border border-slate-700 text-center py-3"
+    >
+      Sign In
+    </Link>
+
+    <Link
+      to="/register"
+      className="block mt-3 rounded-lg bg-cyan-500 text-center py-3 text-black font-semibold"
+    >
+      Get Started
+    </Link>
+
+  </div>
+)}
     </motion.nav>
   )
 }
+
+
 
 export default Navbar

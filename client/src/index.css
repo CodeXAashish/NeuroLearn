@@ -23,3 +23,11 @@ html{
 ::-webkit-scrollbar-thumb:hover{
     background:#22d3ee;
 }
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+}

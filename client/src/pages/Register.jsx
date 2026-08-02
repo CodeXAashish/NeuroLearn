@@ -59,11 +59,11 @@ function Register() {
 
       <AuthBackground />
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between px-8">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-center lg:justify-between px-5 lg:px-8">
 
         {/* Left Side */}
 
-        <div className="hidden w-1/2 lg:flex flex-col justify-center">
+        <div className="hidden lg:flex w-1/2 flex-col justify-center">
 
           <h1 className="text-6xl font-black text-white leading-tight">
             Start Learning with
@@ -106,7 +106,7 @@ function Register() {
         </div>
 
         {/* Right Side */}
-
+        <div className="flex w-full justify-center lg:justify-end">
         <AuthCard
           title="Create Account"
           subtitle="Begin your AI-powered learning journey."
@@ -187,6 +187,7 @@ function Register() {
 
         </AuthCard>
 
+      </div>
       </div>
 
     </div>

@@ -1,8 +1,10 @@
 import { Link, useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
+import { useState } from "react"
 import {
   FaRobot,
   FaBrain,
+  FaBars,
   FaHome,
   FaBook,
   FaClipboardList,
@@ -11,13 +13,15 @@ import {
   FaChartBar,
   FaBell,
   FaUserCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaTimes,
   
 } from "react-icons/fa"
 
 function DashboardNavbar() {
   const location = useLocation()
   const user = JSON.parse(localStorage.getItem("user"))
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const navItems = [
     {
@@ -50,11 +54,6 @@ function DashboardNavbar() {
       path: "/chat",
       icon: <FaComments />,
     },
-    // {
-    //   name: "Analytics",
-    //   path: "/analytics",
-    //   icon: <FaChartBar />,
-    // },
     {
   name: "Mistakes",
   path: "/mistakes",
@@ -116,8 +115,8 @@ function DashboardNavbar() {
                 {item.icon}
 
                <span className="whitespace-nowrap text-sm font-medium">
-    {item.name}
-</span>
+                {item.name}
+               </span>
 
                 {active && (
                   <motion.div
@@ -136,10 +135,17 @@ function DashboardNavbar() {
           })}
 
         </nav>
+        <button
+  className="lg:hidden text-white text-2xl"
+  onClick={() => setMenuOpen(!menuOpen)}
+>
+  {menuOpen ? <FaTimes /> : <FaBars />}
+</button>
+
 
         {/* Right Side */}
 
-        <div className="flex items-center gap-5">
+        <div className="hidden lg:flex items-center gap-5">
 
           <button className="relative text-slate-300 transition hover:text-cyan-400">
 
@@ -173,8 +179,37 @@ function DashboardNavbar() {
         </div>
 
       </div>
+      {menuOpen && (
+  <div className="lg:hidden bg-slate-900 border-t border-slate-800">
+
+    {navItems.map(item => (
+      <Link
+        key={item.name}
+        to={item.path}
+        className="flex items-center gap-3 px-6 py-4 text-white hover:bg-slate-800"
+        onClick={() => setMenuOpen(false)}
+      >
+        {item.icon}
+        {item.name}
+      </Link>
+    ))}
+    <hr className="border-slate-700 my-2" />
+
+<div className="px-6 py-4">
+  <p className="text-white font-semibold">
+    {user?.name || "Student"}
+  </p>
+
+  <p className="text-slate-400 text-sm">
+    {user?.email}
+  </p>
+</div>
+
+  </div>
+)}
 
     </header>
+    
   )
 }
 

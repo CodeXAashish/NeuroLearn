@@ -158,7 +158,7 @@ function Flashcards() {
               onClick={() =>
                 setShowAnswer(!showAnswer)
               }
-              className="relative w-full h-[300px] sm:h-80 cursor-pointer transition-transform duration-700 hover:scale-[1.02]"
+              className="relative w-full min-h-[340px] sm:min-h-[380px] lg:h-[380px] cursor-pointer transition-transform duration-700 hover:scale-[1.02]"
               style={{
                 transformStyle:
                   "preserve-3d",
@@ -171,62 +171,57 @@ function Flashcards() {
               {/* Front */}
 
               <div
-                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col justify-center items-center p-8"
-                style={{
-                  backfaceVisibility:
-                    "hidden",
-                  WebkitBackfaceVisibility:
-                    "hidden",
-                }}
-              >
+  className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col p-6 sm:p-8 overflow-hidden"
+  style={{
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+  }}
+>
+  <div className="text-center">
+    <span className="bg-white/20 px-4 py-1 rounded-full text-sm">
+      Card {currentCard + 1}
+    </span>
 
-               <div className="mb-6">
-  <span className="bg-white/20 px-4 py-1 rounded-full text-sm">
-    Card {currentCard + 1}
-  </span>
+    <h2 className="text-xl sm:text-2xl font-bold mt-5">
+      🃏 Question
+    </h2>
+  </div>
+
+  <div className="flex-1 flex items-center justify-center overflow-y-auto px-2">
+    <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-center leading-relaxed break-words">
+      {cards[currentCard].question}
+    </p>
+  </div>
+
+  <p className="text-center text-blue-200 mt-4 shrink-0">
+    Click to Flip
+  </p>
 </div>
-
-<h2 className="text-2xl font-bold mb-6">
-  🃏 Question
-</h2>
-
-                <p className="text-3xl font-semibold text-center leading-relaxed">
-                  {cards[currentCard].question}
-                </p>
-
-                <p className="mt-10 text-blue-200">
-                  Click to Flip
-                </p>
-
-              </div>
 
               {/* Back */}
 
               <div
-                className="absolute inset-0 rounded-3xl bg-gradient-to-br from-green-600 to-emerald-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col justify-center items-center p-8"
-                style={{
-                  transform:
-                    "rotateY(180deg)",
-                  backfaceVisibility:
-                    "hidden",
-                  WebkitBackfaceVisibility:
-                    "hidden",
-                }}
-              >
+  className="absolute inset-0 rounded-3xl bg-gradient-to-br from-green-600 to-emerald-700 shadow-[0_20px_80px_rgba(0,0,0,0.45)] flex flex-col p-6 sm:p-8 overflow-hidden"
+  style={{
+    transform: "rotateY(180deg)",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+  }}
+>
+  <h2 className="text-xl sm:text-2xl font-bold text-center">
+    🧠 Answer
+  </h2>
 
-                <h2 className="text-2xl font-bold mb-6">
-                  🧠 Answer
-                </h2>
+  <div className="flex-1 flex items-center justify-center overflow-y-auto px-2">
+    <p className="text-lg sm:text-xl lg:text-2xl leading-relaxed text-center break-words">
+      {cards[currentCard].answer}
+    </p>
+  </div>
 
-                <p className="text-2xl leading-relaxed text-center">
-                  {cards[currentCard].answer}
-                </p>
-
-                <p className="mt-10 text-green-200">
-                  Click to Flip Back
-                </p>
-
-              </div>
+  <p className="text-center text-green-200 mt-4 shrink-0">
+    Click to Flip Back
+  </p>
+</div>
 
             </div>
 

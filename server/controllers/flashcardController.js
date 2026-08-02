@@ -35,6 +35,9 @@ Return ONLY valid JSON in this format:
 }
 
 Do not include markdown or explanations.
+constraints:
+Question: Maximum 15–20 words
+Answer: Maximum 50–70 words
 `,
           },
         ],

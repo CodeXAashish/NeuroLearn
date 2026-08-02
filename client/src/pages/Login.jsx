@@ -45,12 +45,11 @@ function Login() {
 
       <AuthBackground />
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-between px-8">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl items-center justify-center lg:justify-between px-5 lg:px-8">
 
         {/* Left */}
 
-        <div className="hidden w-1/2 lg:flex flex-col justify-center">
-
+        <div className="hidden lg:flex w-1/2 flex-col justify-center">
           <h1 className="text-5xl font-black leading-tight text-white">
 
             Welcome to
@@ -79,10 +78,11 @@ function Login() {
 
         {/* Right */}
 
-        <AuthCard
-          title="Welcome Back 👋"
-          subtitle="Sign in to continue learning."
-        >
+        <div className="flex w-full justify-center lg:justify-end">
+  <AuthCard
+    title="Welcome Back 👋"
+    subtitle="Sign in to continue learning."
+  >
 
           <form
             onSubmit={handleSubmit}
@@ -183,6 +183,7 @@ function Login() {
           </form>
 
         </AuthCard>
+        </div>
 
       </div>
 
