@@ -136,8 +136,8 @@ function WelcomeSection() {
         {/* Left */}
 
         <div>
-          <div className="mb-4 flex items-center gap-3">
-            <span className="rounded-full bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-300">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <span className="inline-flex w-fit items-center rounded-full bg-cyan-500/20 px-3 py-2 text-xs sm:px-4 sm:text-sm font-medium text-cyan-300">
               👋 Welcome Back
             </span>
 
@@ -147,14 +147,14 @@ function WelcomeSection() {
     repeat: Infinity,
     duration: 2.5,
   }}
-  className="flex items-center gap-2 rounded-full bg-orange-500/20 px-4 py-2 text-sm text-orange-300"
+  className="inline-flex w-fit items-center gap-2 rounded-full bg-orange-500/20 px-3 py-2 text-xs sm:px-4 sm:text-sm text-orange-300"
 >
               <FaFire />
               {heroData.streak} Day Streak
             </motion.span>
           </div>
 
-          <h1 className="text-4xl font-black text-white">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white break-words">
             {greeting}, {userName} 👋
           </h1>
 
@@ -166,13 +166,13 @@ function WelcomeSection() {
     : "Let's build your study habit one session at a time. Consistency beats intensity."}
 </p>
 
-          <div className="mt-6 flex flex-wrap gap-4">
-            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-slate-300">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-300 break-words">
               <FaCalendarAlt className="text-cyan-400" />
               {today}
             </div>
 
-            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-slate-300">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-300 break-words">
               <FaBookOpen className="text-cyan-400" />
               Today's Goal: {todayGoal}
             </div>
@@ -185,7 +185,7 @@ function WelcomeSection() {
           whileHover={{
             scale: 1.03,
           }}
-          className="rounded-2xl border border-cyan-500/20 bg-slate-900/80 p-6 backdrop-blur-lg lg:w-80"
+          className="w-full lg:w-80 rounded-2xl border border-cyan-500/20 bg-slate-900/80 p-5 sm:p-6 backdrop-blur-lg"
         >
           <p className="text-sm text-slate-400">
             Today's Progress

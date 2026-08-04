@@ -34,7 +34,7 @@ function AnalyticsCards({ analytics }) {
   ]
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
 
       {cards.map((card, index) => (
 
@@ -55,12 +55,13 @@ function AnalyticsCards({ analytics }) {
             y: -5,
             scale: 1.02
           }}
-          className="rounded-3xl border border-slate-800
-           bg-slate-900/70 p-6 backdrop-blur-xl shadow-lg 
-           transition-all duration-300 hover:border-cyan-500/40 
-           hover:shadow-cyan-500/10">
+          className="flex h-full flex-col justify-between 
+          rounded-3xl border border-slate-800 bg-slate-900/70 
+          p-5 sm:p-6 backdrop-blur-xl shadow-lg 
+          transition-all duration-300 hover:border-cyan-500/40 
+          hover:shadow-cyan-500/10">
 
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
 
             <div>
 
@@ -68,9 +69,9 @@ function AnalyticsCards({ analytics }) {
                 {card.title}
               </p>
 
-              <h2 className="mt-3 text-4xl font-bold text-white">
+              <h2 className="mt-3 break-words text-3xl sm:text-4xl font-bold text-white">
                 {card.value}
-              </h2>
+             </h2>
 
               <p className="mt-2 text-sm text-slate-500">
                 {card.subtitle}
@@ -87,8 +88,8 @@ function AnalyticsCards({ analytics }) {
     type: "spring",
     stiffness: 300,
   }}
-  className={`rounded-2xl bg-gradient-to-r ${card.color} p-4 text-2xl text-white shadow-lg`}
->
+  className={`self-start sm:self-auto rounded-2xl bg-gradient-to-r ${card.color} p-3 sm:p-4 text-xl sm:text-2xl text-white shadow-lg`}
+  >
   {card.icon}
 </motion.div>
 
