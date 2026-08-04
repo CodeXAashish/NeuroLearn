@@ -132,115 +132,140 @@ function WelcomeSection() {
 
       <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-purple-500/10 blur-[100px]" />
 
-      <div className="relative flex flex-col justify-between gap-8 lg:flex-row lg:items-center">
-        {/* Left */}
+      <div className="relative grid items-stretch gap-8 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-8">
 
-        <div>
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <span className="inline-flex w-fit items-center rounded-full bg-cyan-500/20 px-3 py-2 text-xs sm:px-4 sm:text-sm font-medium text-cyan-300">
-              👋 Welcome Back
-            </span>
+  {/* Welcome */}
+  <div>
+    <div className="mb-5 flex flex-wrap gap-3">
 
-            <motion.span
-  animate={{ scale: [1, 1.05, 1] }}
-  transition={{
-    repeat: Infinity,
-    duration: 2.5,
-  }}
-  className="inline-flex w-fit items-center gap-2 rounded-full bg-orange-500/20 px-3 py-2 text-xs sm:px-4 sm:text-sm text-orange-300"
->
-              <FaFire />
-              {heroData.streak} Day Streak
-            </motion.span>
-          </div>
+      <span className="rounded-full bg-cyan-500/20 px-4 py-2 text-sm font-medium text-cyan-300">
+        👋 Welcome Back
+      </span>
 
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white break-words">
-            {greeting}, {userName} 👋
-          </h1>
+      <span className="flex items-center gap-2 rounded-full bg-orange-500/20 px-4 py-2 text-sm text-orange-300">
+        <FaFire />
+        {heroData.streak} Day Streak
+      </span>
 
-          <p className="mt-3 max-w-2xl leading-7 text-slate-300">
-  {heroData.progress >= 80
-    ? "You're in the final stretch. Finish your remaining topics and revise with confidence."
-    : heroData.progress >= 50
-    ? "You're making steady progress. Stay consistent and keep building your mastery."
-    : "Let's build your study habit one session at a time. Consistency beats intensity."}
-</p>
+    </div>
 
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-300 break-words">
-              <FaCalendarAlt className="text-cyan-400" />
-              {today}
-            </div>
+    <h1 className="text-5xl font-black text-white">
+      {greeting}, {userName} 👋
+    </h1>
 
-            <div className="flex items-center gap-2 rounded-xl bg-slate-800 px-4 py-3 text-sm text-slate-300 break-words">
-              <FaBookOpen className="text-cyan-400" />
-              Today's Goal: {todayGoal}
-            </div>
-          </div>
-        </div>
+    <p className="mt-4 max-w-3xl text-slate-300 leading-8">
+      {heroData.progress >= 80
+        ? "You're in the final stretch. Finish your remaining topics and revise with confidence."
+        : heroData.progress >= 50
+        ? "You're making steady progress. Stay consistent and keep building your mastery."
+        : "Let's build your study habit one session at a time. Consistency beats intensity."}
+    </p>
+  </div>
+
+  {/* Date */}
+  <div className="rounded-2xl bg-slate-800/70 p-6">
+
+    <div className="flex items-center gap-3 text-cyan-400">
+
+      <FaCalendarAlt />
+
+      <span className="font-semibold">
+        Today's Date
+      </span>
+
+    </div>
+
+    <p className="mt-4 text-lg text-white">
+      {today}
+    </p>
+
+  </div>
+
+  {/* Today's Goal */}
+  <div className="rounded-2xl bg-slate-800/70 p-6">
+
+    <div className="flex items-center gap-3 text-cyan-400">
+
+      <FaBookOpen />
+
+      <span className="font-semibold">
+        Today's Goal
+      </span>
+
+    </div>
+
+    <p className="mt-4 leading-8 text-slate-300 break-words">
+      {todayGoal}
+    </p>
+
+  </div>
+
+</div>
 
         {/* Right */}
 
         <motion.div
-          whileHover={{
-            scale: 1.03,
-          }}
-          className="w-full lg:w-80 rounded-2xl border border-cyan-500/20 bg-slate-900/80 p-5 sm:p-6 backdrop-blur-lg"
-        >
-          <p className="text-sm text-slate-400">
-            Today's Progress
-          </p>
+  whileHover={{ scale: 1.02 }}
+  className="flex h-full min-h-full flex-col rounded-3xl border border-cyan-500/20 bg-slate-900/80 p-8 backdrop-blur-lg"
+  >
+  <div>
+    <p className="text-sm text-slate-400">
+      Today's Progress
+    </p>
 
-          <h2 className="mt-2 text-5xl font-black text-cyan-400">
-            {heroData.progress}%
-          </h2>
+    <h2 className="mt-3 text-6xl font-black text-cyan-400">
+      {heroData.progress}%
+    </h2>
 
-          <div className="mt-5 h-3 overflow-hidden rounded-full bg-slate-700">
-            <motion.div
-              initial={{
-                width: 0,
-              }}
-              animate={{
-                width: `${heroData.progress}%`,
-              }}
-              transition={{
-                duration: 1.2,
-              }}
-              className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
-            />
-          </div>
+    <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-700">
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${heroData.progress}%` }}
+        transition={{ duration: 1.2 }}
+        className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-blue-500"
+      />
+    </div>
 
-          <p className="mt-4 text-sm text-slate-400">
-            {heroData.completedDays} of{" "}
-            {heroData.totalDays} Days Completed
-          </p>
+    <p className="mt-6 text-base text-slate-300">
+      {heroData.completedDays} of {heroData.totalDays} Days Completed
+    </p>
 
-          <p className="mt-2 text-sm text-cyan-300">
-            Day {heroData.currentDay} of{" "}
-            {heroData.totalDays}
-          </p>
+    <p className="mt-2 font-semibold text-cyan-300">
+      Day {heroData.currentDay} of {heroData.totalDays}
+    </p>
+  </div>
 
-          <button onClick={handleContinueLearning}
-           disabled={todayGoal === "Loading..."}
-          className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3 font-semibold transition
-        ${
-           todayGoal === "Loading..."
-        ? "cursor-not-allowed bg-slate-600 text-slate-300"
-        : "bg-cyan-500 text-black hover:scale-[1.02] hover:bg-cyan-400"
-        }`} >
-         Continue Learning
-        <FaArrowRight />
-        </button>
-        <p className="mt-4 text-sm text-slate-400">
-  {heroData.progress >= 80
-    ? "🔥 You're almost ready for your exam!"
-    : heroData.progress >= 50
-    ? "🚀 Great progress! Keep the momentum going."
-    : "💡 Every study session gets you closer to your goal."}
-</p>
-        </motion.div>
-      </div>
-    </motion.section>
+  {/* Push this section to the bottom */}
+  <div className="mt-auto">
+
+    <button
+      onClick={handleContinueLearning}
+      disabled={todayGoal === "Loading..."}
+      className={`w-full rounded-2xl py-4 font-semibold transition ${
+        todayGoal === "Loading..."
+          ? "cursor-not-allowed bg-slate-600 text-slate-300"
+          : "bg-cyan-500 text-black hover:bg-cyan-400"
+      }`}
+    >
+      Continue Learning
+      <FaArrowRight className="ml-2 inline" />
+    </button>
+
+    <div className="mt-8 border-t border-slate-700 pt-6">
+      <p className="text-slate-300">
+        {heroData.progress >= 80
+          ? "🔥 You're almost ready for your exam!"
+          : heroData.progress >= 50
+          ? "🚀 Great progress! Keep the momentum going."
+          : "💡 Every study session gets you closer to your goal."}
+      </p>
+    </div>
+
+  </div>
+</motion.div>
+</div>
+</motion.section>
   )
 }
 
