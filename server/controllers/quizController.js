@@ -95,63 +95,84 @@ const quiz = JSON.parse(quizText)
 // NEW FUNCTION
 const submitQuiz = async (req, res) => {
   try {
-    const { topic, answers } = req.body
-    const normalizedTopic = topic.trim().toUpperCase()
-    let score = 0
+    const { topic, answers } = req.body;
+    const normalizedTopic = topic.trim().toUpperCase();
+
+    let score = 0;
+
+    console.log("Answers received:", answers);
 
     for (const answer of answers) {
 
-  if (answer.userAnswer === answer.correctAnswer) {
+      if (answer.userAnswer === answer.correctAnswer) {
 
-    score++
+        score++;
 
-    // Resolve one previous unresolved mistake
-    const unresolvedMistake = await Mistake.findOne({
-      user: req.user._id,
-      topic: normalizedTopic,
-      question: answer.question,
-      resolved: false,
-    })
+        const unresolvedMistake = await Mistake.findOne({
+          user: req.user._id,
+          topic: normalizedTopic,
+          question: answer.question,
+          resolved: false,
+        });
 
-    if (unresolvedMistake) {
-      unresolvedMistake.resolved = true
-      unresolvedMistake.resolvedAt = new Date()
+        if (unresolvedMistake) {
+          unresolvedMistake.resolved = true;
+          unresolvedMistake.resolvedAt = new Date();
+          await unresolvedMistake.save();
+        }
 
-      await unresolvedMistake.save()
+      } else {
+
+        const existingMistake = await Mistake.findOne({
+          user: req.user._id,
+          topic: normalizedTopic,
+          question: answer.question,
+          resolved: false,
+        });
+
+        if (!existingMistake) {
+          const createdMistake = await Mistake.create({
+            user: req.user._id,
+            topic: normalizedTopic,
+            question: answer.question,
+            userAnswer: answer.userAnswer,
+            correctAnswer: answer.correctAnswer,
+          });
+
+          console.log("Created:", createdMistake._id);
+
+        } else {
+
+          console.log("Already exists:", answer.question);
+
+        }
+      }
     }
 
-  } else {
-
-    await Mistake.create({
-      user: req.user._id,
-      topic: normalizedTopic,
-      question: answer.question,
-      userAnswer: answer.userAnswer,
-      correctAnswer: answer.correctAnswer,
-    })
-
-  }
-}
+    // ✅ This should execute AFTER processing ALL answers
     const attempt = await QuizAttempt.create({
       user: req.user._id,
       topic: normalizedTopic,
       score,
       totalQuestions: answers.length,
-    })
+    });
 
     res.status(200).json({
       score,
       totalQuestions: answers.length,
       attempt,
-    })
-   } catch (error) {
-    console.log(error)
+    });
+
+  } catch (error) {
+
+    console.log(error);
 
     res.status(500).json({
       message: error.message,
-    })
+    });
+
   }
-}
+};
 
 module.exports = {
   generateQuiz,

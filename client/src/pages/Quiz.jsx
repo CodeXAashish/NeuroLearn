@@ -43,6 +43,21 @@ function Quiz() {
   }
 }, [location])
 
+useEffect(() => {
+  if (!result) return;
+
+  if (countdown === 0) {
+    navigate("/dashboard");
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    setCountdown((prev) => prev - 1);
+  }, 1000);
+
+  return () => clearTimeout(timer);
+}, [result, countdown, navigate]);
+
   const generateQuizAutomatically = async (
   selectedTopic,
   selectedDifficulty
@@ -98,25 +113,13 @@ function Quiz() {
         correctAnswer: q.correctAnswer,
       })),
     }
-
-    const data = await submitQuiz(payload)
-
+const data = await submitQuiz(payload);
      setResult(data)
 
-setCountdown(5)
 
-const interval = setInterval(() => {
-  setCountdown((prev) => {
-    if (prev === 1) {
-      clearInterval(interval)
-      navigate("/dashboard")
-      return 0
-    }
 
-    return prev - 1
-  })
-}, 1000)
-
+setResult(data);
+setCountdown(5);
   } catch (error) {
     console.log(error)
   }
