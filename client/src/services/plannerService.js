@@ -40,6 +40,21 @@ export const completeTodayPlan = async () => {
 
   return response.data
 }
+export const updateTopicActivity = async ({
+  topic,
+  activity,
+}) => {
+  const response = await axios.put(
+    `${API}/topic-activity`,
+    {
+      topic,
+      activity,
+    },
+    getAuthConfig()
+  )
+
+  return response.data
+}
 
 export const getProgress = async () => {
   const response = await axios.get(

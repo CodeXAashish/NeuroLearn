@@ -4,6 +4,11 @@ import {
   generateQuiz,
   submitQuiz,
 } from "../services/quizService"
+
+import {
+  updateTopicActivity,
+} from "../services/plannerService"
+
 import { useNavigate} from "react-router-dom"
 
 function Quiz() {
@@ -115,10 +120,11 @@ useEffect(() => {
     }
 const data = await submitQuiz(payload);
      setResult(data)
+    await updateTopicActivity({
+    topic,
+    activity: "quizCompleted",
+})
 
-
-
-setResult(data);
 setCountdown(5);
   } catch (error) {
     console.log(error)

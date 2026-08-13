@@ -1,6 +1,11 @@
 const StudyPlan = require("../models/StudyPlan")
 const client = require("../ai/openrouter")
 
+const {
+    calculateDayProgress,
+} = require("../helpers/progressHelper")
+
+
 const getHeroData = async (req, res) => {
   try {
     const studyPlan = await StudyPlan.findOne({
@@ -62,13 +67,14 @@ const getContinueLearning = async (req, res) => {
         progress: 0,
         lastStudied: "Never",
         estimatedTime: 0,
+        status: "Not Started",
         nextRoute: "/planner",
       })
     }
 
     const todayPlan = studyPlan.dailyPlans.find(
-  (plan) => !plan.completed
-)
+      (plan) => !plan.completed
+    )
 
     if (!todayPlan) {
       return res.json({
@@ -76,20 +82,28 @@ const getContinueLearning = async (req, res) => {
         progress: 100,
         lastStudied: "Completed",
         estimatedTime: 0,
+        status: "Completed",
         nextRoute: "/dashboard",
       })
     }
 
+    const progress = calculateDayProgress(todayPlan)
+
+    const topicNames = todayPlan.topics
+      .map((topic) => topic.name)
+      .join(", ")
+
     res.json({
-      topic: todayPlan.topics.join(", "),
-      progress: todayPlan.completed ? 100 : 0,
-      lastStudied: todayPlan.completed
-        ? "Completed"
-        : "Today",
+      topic: topicNames,
+      progress,
+      lastStudied: "Today",
       estimatedTime: 0,
-status: todayPlan.completed
-  ? "Completed"
-  : "In Progress",
+      status:
+        progress === 100
+          ? "Completed"
+          : progress > 0
+          ? "In Progress"
+          : "Not Started",
       nextRoute: "/planner",
     })
   } catch (error) {

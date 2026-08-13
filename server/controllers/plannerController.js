@@ -9,6 +9,10 @@ const {
   getRecommendedDifficulty,
 } = require("../helpers/difficultyHelper")
 
+const {
+    calculateDayProgress,
+} = require("../helpers/progressHelper")
+
 // ===============================
 // Setup Study Plan
 // ===============================
@@ -95,19 +99,27 @@ Example:
     )
 
     const dailyPlans = aiPlan.map((item) => {
-      const date = new Date(startDate)
+  const date = new Date(startDate)
 
-      date.setDate(
-        startDate.getDate() + (item.day - 1)
-      )
+  date.setDate(
+    startDate.getDate() + (item.day - 1)
+  )
 
-      return {
-        day: item.day,
-        date,
-        topics: item.topics,
-        completed: false,
-      }
-    })
+  const topics = item.topics.map((topic) => ({
+    name: topic,
+    notesCompleted: false,
+    quizCompleted: false,
+    flashcardsCompleted: false,
+    mistakesReviewed: false,
+  }))
+
+  return {
+    day: item.day,
+    date,
+    topics,
+    completed: false,
+  }
+})
 
     const plan = await StudyPlan.create({
       user: req.user._id,
@@ -162,11 +174,11 @@ if (!todayPlan) {
 const currentDay = todayPlan.day
 
 const daysLeft = studyPlan.dailyPlans.length - currentDay
-    if (!todayPlan) {
-      return res.status(404).json({
-        message: "No study plan found for today.",
-      })
-    }
+    // if (!todayPlan) {
+    //   return res.status(404).json({
+    //     message: "No study plan found for today.",
+    //   })
+    // }
 
     // Weak Topics
     const weakTopics =
@@ -232,7 +244,7 @@ const daysLeft = studyPlan.dailyPlans.length - currentDay
 Today's Topics:
 
 ${todayPlan.topics
-  .map((topic) => `- ${topic}`)
+  .map((topic) => `- ${topic.name}`)
   .join("\n")}
 
 Recommended Quiz Difficulty:
@@ -242,13 +254,13 @@ Weak Topics:
 ${weakTopicsText}
 `
 
-    res.status(200).json({
-      currentDay,
-      daysLeft,
-      difficulty,
-      plan,
-      topics: todayPlan.topics,
-    })
+   res.status(200).json({
+  currentDay,
+  daysLeft,
+  difficulty,
+  plan,
+  topics: todayPlan.topics,
+})
   } catch (error) {
     console.error(error)
 
@@ -331,6 +343,84 @@ await studyPlan.save()
   }
 }
 
+const updateTopicActivity = async (req, res) => {
+  try {
+    const { topic, activity } = req.body
+
+    if (!topic || !activity) {
+      return res.status(400).json({
+        message: "Topic and activity are required.",
+      })
+    }
+
+    const allowedActivities = [
+      "notesCompleted",
+      "quizCompleted",
+      "flashcardsCompleted",
+      "mistakesReviewed",
+    ]
+
+    if (!allowedActivities.includes(activity)) {
+      return res.status(400).json({
+        message: "Invalid activity.",
+      })
+    }
+
+    const studyPlan = await StudyPlan.findOne({
+      user: req.user._id,
+    })
+
+    if (!studyPlan) {
+      return res.status(404).json({
+        message: "Study plan not found.",
+      })
+    }
+
+    // Find the current unfinished day
+    const todayPlan = studyPlan.dailyPlans.find(
+      (plan) => !plan.completed
+    )
+
+    if (!todayPlan) {
+      return res.status(400).json({
+        message: "All study days are completed.",
+      })
+    }
+
+    // Find the topic
+    const topicData = todayPlan.topics.find(
+      (item) =>
+        item.name.trim().toLowerCase() ===
+        topic.trim().toLowerCase()
+    )
+
+    if (!topicData) {
+      return res.status(404).json({
+        message: "Topic not found in today's study plan.",
+      })
+    }
+
+    // Mark activity completed
+    topicData[activity] = true
+
+    await studyPlan.save()
+
+    res.status(200).json({
+      message: "Activity completed successfully.",
+      topic: topicData,
+      progress: calculateDayProgress(todayPlan),
+    })
+  } catch (error) {
+    console.error(error)
+
+    res.status(500).json({
+      message: error.message,
+    })
+  }
+}
+
+
+
 // ===============================
 // Progress API
 // ===============================
@@ -404,5 +494,6 @@ module.exports = {
   setupStudyPlan,
   getTodayPlan,
   completeTodayPlan,
+  updateTopicActivity,
   getProgress,
 }
