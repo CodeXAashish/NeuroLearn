@@ -7,6 +7,7 @@ import {
   getTodayPlan,
   completeTodayPlan,
 } from "../services/plannerService"
+
 import {
   BookOpen,
   Target,
@@ -18,7 +19,10 @@ function Planner() {
 
   // Setup States
   const [examDate, setExamDate] = useState("")
-  const [hoursPerDay, setHoursPerDay] = useState(3)
+const [hoursPerDay, setHoursPerDay] = useState(3)
+
+const [planningDays, setPlanningDays] = useState(45)
+const [customDays, setCustomDays] = useState("")
 
   // Planner States
   const [todayPlan, setTodayPlan] = useState(null)
@@ -68,6 +72,7 @@ function Planner() {
       await setupStudyPlan({
         examDate,
         hoursPerDay,
+        planningDays,
       })
 
       await loadTodayPlan()
@@ -135,6 +140,92 @@ function Planner() {
             className="w-full rounded-xl border border-zinc-700 bg-zinc-800 p-4 focus:border-blue-500 focus:outline-none"
           />
         </div>
+
+        {/* Planning Duration */}
+
+<div className="mb-8">
+  <label className="block mb-3 text-sm text-zinc-400">
+    Planning Duration
+  </label>
+
+  <div className="grid grid-cols-2 gap-3">
+    {[30, 45, 60, 90].map((days) => (
+      <button
+        key={days}
+        type="button"
+        onClick={() => {
+          setPlanningDays(days)
+          setCustomDays("")
+        }}
+        className={`rounded-xl border p-4 text-left transition-all ${
+          planningDays === days && !customDays
+            ? "border-blue-500 bg-blue-600/20"
+            : "border-zinc-700 bg-zinc-800 hover:border-blue-400"
+        }`}
+      >
+        <p className="font-semibold">
+          {days} Days
+          {days === 45 && (
+            <span className="ml-2 text-xs text-yellow-400">
+              ⭐ Recommended
+            </span>
+          )}
+        </p>
+
+        <p className="mt-1 text-xs text-zinc-400">
+          {days === 30
+            ? "Fast-paced"
+            : days === 45
+            ? "Balanced"
+            : days === 60
+            ? "Relaxed"
+            : "Extended"}
+        </p>
+      </button>
+    ))}
+  </div>
+
+  {/* Custom */}
+
+  <div className="mt-3">
+    <button
+      type="button"
+      onClick={() => setPlanningDays(null)}
+      className={`w-full rounded-xl border p-4 text-left transition-all ${
+        customDays
+          ? "border-blue-500 bg-blue-600/20"
+          : "border-zinc-700 bg-zinc-800 hover:border-blue-400"
+      }`}
+    >
+      <p className="font-semibold">
+        Custom
+      </p>
+
+      <p className="mt-1 text-xs text-zinc-400">
+        Choose your own planning duration
+      </p>
+    </button>
+
+    {planningDays === null && (
+      <input
+        type="number"
+        min="1"
+        max="365"
+        placeholder="Enter number of days"
+        value={customDays}
+        onChange={(e) => {
+          setCustomDays(e.target.value)
+          setPlanningDays(
+            e.target.value
+              ? Number(e.target.value)
+              : null
+          )
+        }}
+        className="mt-3 w-full rounded-xl border border-zinc-700 bg-zinc-800 p-4 focus:border-blue-500 focus:outline-none"
+      />
+    )}
+  </div>
+</div>
 
         <button
           onClick={handleSetup}
