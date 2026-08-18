@@ -26,10 +26,14 @@ const protect = async (req, res, next) => {
     })
 
   } catch (error) {
-    return res.status(401).json({
-      message: "Not authorized, invalid token",
-    })
-  }
+  console.error("AUTH ERROR:", error.name)
+  console.error("AUTH MESSAGE:", error.message)
+
+  return res.status(401).json({
+    message: "Not authorized, invalid token",
+    error: error.message,
+  })
+}
 }
 
 module.exports = {

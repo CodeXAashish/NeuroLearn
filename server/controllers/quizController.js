@@ -100,7 +100,7 @@ const submitQuiz = async (req, res) => {
 
     let score = 0;
 
-    console.log("Answers received:", answers);
+    // console.log("Answers received:", answers);
 
     for (const answer of answers) {
 
@@ -139,13 +139,13 @@ const submitQuiz = async (req, res) => {
             correctAnswer: answer.correctAnswer,
           });
 
-          console.log("Created:", createdMistake._id);
+        //   console.log("Created:", createdMistake._id);
 
-        } else {
+         } //else {
 
-          console.log("Already exists:", answer.question);
+        //   console.log("Already exists:", answer.question);
 
-        }
+        // }
       }
     }
 
