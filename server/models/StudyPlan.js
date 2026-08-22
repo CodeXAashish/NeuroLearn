@@ -1,8 +1,8 @@
 const mongoose = require("mongoose")
 
-// ===============================
+// ========================================
 // Activity Schema
-// ===============================
+// ========================================
 
 const activitySchema = new mongoose.Schema(
   {
@@ -20,9 +20,41 @@ const activitySchema = new mongoose.Schema(
   { _id: false }
 )
 
-// ===============================
+// ========================================
+// Daily Subtopic Schema
+// ========================================
+
+const dailySubtopicSchema = new mongoose.Schema(
+  {
+    subtopicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    covered: {
+      type: activitySchema,
+      default: () => ({}),
+    },
+
+    mastery: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+  },
+  { _id: false }
+)
+
+// ========================================
 // Daily Topic Schema
-// ===============================
+// ========================================
 
 const dailyTopicSchema = new mongoose.Schema(
   {
@@ -37,31 +69,47 @@ const dailyTopicSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Student actually studied the topic
+    subtopics: {
+      type: [dailySubtopicSchema],
+      default: [],
+    },
+
+    // -------------------------------
+    // Required activities
+    // -------------------------------
+
     covered: {
       type: activitySchema,
       default: () => ({}),
     },
 
-    // Notes activity
-    notes: {
-      type: activitySchema,
-      default: () => ({}),
-    },
-
-    // Flashcards activity
-    flashcards: {
-      type: activitySchema,
-      default: () => ({}),
-    },
-
-    // Quiz activity
     quiz: {
       type: activitySchema,
       default: () => ({}),
     },
 
-    // Mistake review
+    // -------------------------------
+    // Optional activities
+    // -------------------------------
+
+    notes: {
+      type: activitySchema,
+      default: () => ({
+        status: "not_required",
+      }),
+    },
+
+    flashcards: {
+      type: activitySchema,
+      default: () => ({
+        status: "not_required",
+      }),
+    },
+
+    // -------------------------------
+    // Required only when mistakes exist
+    // -------------------------------
+
     mistakeReview: {
       type: activitySchema,
       default: () => ({
@@ -69,7 +117,10 @@ const dailyTopicSchema = new mongoose.Schema(
       }),
     },
 
-    // Overall activity completion
+    // -------------------------------
+    // Overall topic completion
+    // -------------------------------
+
     completed: {
       type: Boolean,
       default: false,
@@ -83,9 +134,130 @@ const dailyTopicSchema = new mongoose.Schema(
   { _id: false }
 )
 
-// ===============================
+// ========================================
+// Daily Task Schema
+// ========================================
+
+const dailyTaskSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+)
+
+// ========================================
+// Daily Plan Schema
+// ========================================
+
+const dailyPlanSchema = new mongoose.Schema(
+  {
+    day: {
+      type: Number,
+      required: true,
+    },
+
+    date: {
+      type: Date,
+      required: true,
+    },
+
+    // -------------------------------
+    // Phase
+    // -------------------------------
+
+    phase: {
+      type: String,
+
+      enum: [
+        "Learning",
+        "Revision",
+        "Practice",
+        "Weak Topics",
+        "Final Revision",
+      ],
+
+      default: "Learning",
+    },
+
+    // -------------------------------
+    // Topics for this day
+    // -------------------------------
+
+    topics: {
+      type: [dailyTopicSchema],
+      default: [],
+    },
+
+    // -------------------------------
+    // General tasks
+    // Useful for Revision / Practice
+    // -------------------------------
+
+    tasks: {
+      type: [dailyTaskSchema],
+      default: [],
+    },
+
+    // -------------------------------
+    // AI-generated daily instructions
+    // -------------------------------
+
+    instructions: {
+      type: [String],
+      default: [],
+    },
+
+    // -------------------------------
+    // Why these topics were selected
+    // Especially useful for Revision
+    // -------------------------------
+
+    reason: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
+    // -------------------------------
+    // Overall day completion
+    // -------------------------------
+
+    completed: {
+      type: Boolean,
+      default: false,
+    },
+
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+)
+
+// ========================================
 // Study Plan Schema
-// ===============================
+// ========================================
 
 const studyPlanSchema = new mongoose.Schema(
   {
@@ -120,7 +292,10 @@ const studyPlanSchema = new mongoose.Schema(
       min: 1,
     },
 
-    // Days fully completed
+    // ====================================
+    // Fully completed days
+    // ====================================
+
     completedDays: [
       {
         day: {
@@ -135,47 +310,14 @@ const studyPlanSchema = new mongoose.Schema(
       },
     ],
 
-    // Complete day-by-day plan
-    dailyPlans: [
-      {
-        day: {
-          type: Number,
-          required: true,
-        },
+    // ====================================
+    // Complete roadmap
+    // ====================================
 
-        date: {
-          type: Date,
-          required: true,
-        },
-
-        topics: {
-          type: [dailyTopicSchema],
-          default: [],
-        },
-
-        phase: {
-          type: [String],
-          enum: [
-            "Learning",
-            "Revision",
-            "Practice",
-            "Weak Topics",
-            "Final Revision",
-          ],
-          default: ["Learning"],
-        },
-
-        completed: {
-          type: Boolean,
-          default: false,
-        },
-
-        completedAt: {
-          type: Date,
-          default: null,
-        },
-      },
-    ],
+    dailyPlans: {
+      type: [dailyPlanSchema],
+      default: [],
+    },
   },
 
   {

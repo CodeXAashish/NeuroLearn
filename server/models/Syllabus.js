@@ -1,6 +1,10 @@
 const mongoose = require("mongoose")
 
-const topicSchema = new mongoose.Schema({
+// ========================================
+// Subtopic
+// ========================================
+
+const subtopicSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -25,7 +29,45 @@ const topicSchema = new mongoose.Schema({
   },
 })
 
-const subjectSchema = new mongoose.Schema({
+// ========================================
+// Topic
+// ========================================
+
+const topicSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  subtopics: {
+    type: [subtopicSchema],
+    default: [],
+  },
+
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+
+  completedAt: {
+    type: Date,
+    default: null,
+  },
+
+  mastery: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100,
+  },
+})
+
+// ========================================
+// Unit
+// ========================================
+
+const unitSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -36,7 +78,38 @@ const subjectSchema = new mongoose.Schema({
     type: [topicSchema],
     default: [],
   },
+
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+
+  completedAt: {
+    type: Date,
+    default: null,
+  },
 })
+
+// ========================================
+// Subject
+// ========================================
+
+const subjectSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+
+  units: {
+    type: [unitSchema],
+    default: [],
+  },
+})
+
+// ========================================
+// Syllabus
+// ========================================
 
 const syllabusSchema = new mongoose.Schema(
   {
@@ -70,4 +143,7 @@ const syllabusSchema = new mongoose.Schema(
   }
 )
 
-module.exports = mongoose.model("Syllabus", syllabusSchema)
+module.exports = mongoose.model(
+  "Syllabus",
+  syllabusSchema
+)
