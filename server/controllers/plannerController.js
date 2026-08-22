@@ -11,271 +11,483 @@ const {
     calculateDayProgress,
 } = require("../helpers/progressHelper")
 
-// ===============================
-// Setup Study Plan
-// ===============================
-
 const setupStudyPlan = async (req, res) => {
   try {
     const { hoursPerDay, planningDays } = req.body
 
-    // --------------------------------
+    // ========================================
     // 1. Validate input
-    // --------------------------------
+    // ========================================
 
     const totalDays = Number(planningDays)
     const studyHours = Number(hoursPerDay)
 
-    if (!Number.isInteger(totalDays) || totalDays < 1) {
+    if (
+      !Number.isInteger(totalDays) ||
+      totalDays < 1 ||
+      totalDays > 365
+    ) {
       return res.status(400).json({
-        message: "Valid planning duration is required.",
+        message:
+          "Planning duration must be between 1 and 365 days.",
       })
     }
 
-    if (!Number.isFinite(studyHours) || studyHours <= 0) {
+    if (
+      !Number.isFinite(studyHours) ||
+      studyHours <= 0
+    ) {
       return res.status(400).json({
-        message: "Valid study hours per day are required.",
+        message:
+          "Valid study hours per day are required.",
       })
     }
 
-    // --------------------------------
-    // 2. Get syllabus
-    // --------------------------------
+    // ========================================
+    // 2. Get user's syllabus
+    // ========================================
 
     const syllabus = await Syllabus.findOne({
       user: req.user._id,
+    }).sort({
+      createdAt: -1
     })
 
     if (!syllabus) {
       return res.status(404).json({
-        message: "Please upload a syllabus first.",
+        message:
+          "Please upload a syllabus first.",
       })
     }
-
+    
     if (
       !syllabus.subjects ||
       syllabus.subjects.length === 0
     ) {
       return res.status(400).json({
-        message: "Your syllabus does not contain any subjects.",
+        message:
+          "Your syllabus does not contain any subjects.",
       })
     }
 
-    // --------------------------------
-    // 3. Flatten syllabus topics
-    // --------------------------------
+    // ========================================
+    // 3. Flatten:
     //
-    // IMPORTANT:
-    // We preserve the order in which the
-    // topics exist in the syllabus.
+    // Subject
+    //   → Unit
+    //      → Topic
+    //         → Subtopic
     //
+    // We use SUBTOPIC as the smallest
+    // learning unit.
+    // ========================================
 
-    const allTopics = []
+    const learningUnits = []
 
     syllabus.subjects.forEach((subject) => {
-      if (!subject.topics || subject.topics.length === 0) {
+      if (
+        !subject.units ||
+        subject.units.length === 0
+      ) {
         return
       }
 
-      subject.topics.forEach((topic) => {
-        allTopics.push({
-          topicId: topic._id,
-          name: topic.name,
-          subject: subject.name,
+      subject.units.forEach((unit) => {
+        if (
+          !unit.topics ||
+          unit.topics.length === 0
+        ) {
+          return
+        }
+
+        unit.topics.forEach((topic) => {
+          // --------------------------------
+          // Topic with subtopics
+          // --------------------------------
+
+          if (
+            topic.subtopics &&
+            topic.subtopics.length > 0
+          ) {
+            topic.subtopics.forEach(
+              (subtopic) => {
+                learningUnits.push({
+                  subtopicId:
+                    subtopic._id,
+
+                  topicId:
+                    topic._id,
+
+                  subject:
+                    subject.name,
+
+                  unit:
+                    unit.name,
+
+                  topic:
+                    topic.name,
+
+                  name:
+                    subtopic.name,
+
+                  mastery:
+                    subtopic.mastery || 0,
+                })
+              }
+            )
+          }
+
+          // --------------------------------
+          // Safety fallback
+          //
+          // If AI created a topic without
+          // subtopics, don't lose it.
+          // --------------------------------
+
+          else {
+            learningUnits.push({
+              subtopicId: null,
+
+              topicId:
+                topic._id,
+
+              subject:
+                subject.name,
+
+              unit:
+                unit.name,
+
+              topic:
+                topic.name,
+
+              name:
+                topic.name,
+
+              mastery:
+                topic.mastery || 0,
+            })
+          }
         })
       })
     })
 
-    if (allTopics.length === 0) {
+    // ========================================
+    // 4. Validate learning units
+    // ========================================
+
+    if (learningUnits.length === 0) {
       return res.status(400).json({
-        message: "No topics were found in your syllabus.",
+        message:
+          "No learning topics or subtopics were found in your syllabus.",
       })
     }
 
-    // --------------------------------
-// 4. Calculate Study Phases
-// --------------------------------
-//
-// Learning days are based on the number
-// of syllabus topics, not a percentage
-// of the total planning duration.
-//
-// Target:
-//   ~4 topics per learning day
-//   Minimum: 3
-//   Maximum: 5
-//
-// After the syllabus is completed,
-// remaining days are used for:
-//   Revision → Practice → Final Revision
-// --------------------------------
-const totalTopics = allTopics.length
-
-const TARGET_TOPICS_PER_DAY = 3.5
-
-let learningDays = Math.ceil(
-  totalTopics / TARGET_TOPICS_PER_DAY
-)
-
-// Keep the average workload at
-// approximately 3–5 topics per day.
-//
-// Example:
-// 5 topics  → 1 day  → 5
-// 6 topics  → 2 days → 3 + 3
-// 8 topics  → 2 days → 4 + 4
-// 10 topics → 3 days → 4 + 3 + 3
-// 16 topics → 4 days → 4 + 4 + 4 + 4
-if (
-  totalTopics >= 3 &&
-  totalTopics / learningDays < 3
-) {
-  learningDays -= 1
-}
-
-learningDays = Math.max(
-  learningDays,
-  1
-)
-// --------------------------------
-// Make sure the selected duration
-// is long enough to learn the syllabus
-// --------------------------------
-
-if (learningDays > totalDays) {
-  return res.status(400).json({
-    message:
-      `The selected planning duration is too short. ` +
-      `${totalTopics} topics require at least ` +
-      `${learningDays} learning days ` +
-      `(around 3–5 topics per day).`,
-  })
-}
-
-// --------------------------------
-// Remaining days after learning
-// --------------------------------
-
-const remainingDays =
-  totalDays - learningDays
-
-let revisionDays = 0
-let practiceDays = 0
-let finalRevisionDays = 0
-
-if (remainingDays > 0) {
-
-  // Final revision gets approximately 15%
-  finalRevisionDays = Math.max(
-    1,
-    Math.round(
-      remainingDays * 0.15
-    )
-  )
-
-  // Practice gets approximately 25%
-  practiceDays = Math.max(
-    1,
-    Math.round(
-      remainingDays * 0.25
-    )
-  )
-
-  // Everything else goes to revision
-  revisionDays =
-    remainingDays -
-    practiceDays -
-    finalRevisionDays
-
-  // Safety correction
-  if (revisionDays < 0) {
-    revisionDays = 0
-  }
-}
-    
- // --------------------------------
-// Generate Learning Days
-// --------------------------------
-
-const learningPlans = []
-
-let topicIndex = 0
-
-for (
-  let day = 1;
-  day <= learningDays;
-  day++
-) {
-  const remainingTopics =
-    totalTopics - topicIndex
-
-  const remainingDays =
-    learningDays - day + 1
-
-  // Balanced distribution.
-  //
-  // Example:
-  // 16 topics / 4 days
-  // → 4, 4, 4, 4
-  //
-  // 17 topics / 4 days
-  // → 5, 4, 4, 4
-  //
-  // 14 topics / 4 days
-  // → 4, 4, 3, 3
-  //
-
-  let topicsForDay =
-    Math.ceil(
-      remainingTopics /
-        remainingDays
-    )
-
-  // Keep normal workload between 3–5
-  // whenever mathematically possible.
-  topicsForDay = Math.max(
-    3,
-    Math.min(
-      5,
-      topicsForDay
-    )
-  )
-
-  // Never exceed remaining topics.
-  topicsForDay = Math.min(
-    topicsForDay,
-    remainingTopics
-  )
-
-  const dayTopics =
-    allTopics.slice(
-      topicIndex,
-      topicIndex + topicsForDay
-    )
-
-  learningPlans.push({
-    day,
-
-    topics: dayTopics,
-
-    phase: ["Learning"],
-  })
-
-  topicIndex += topicsForDay
-}
-
-
-    // --------------------------------
-    // 7. If syllabus doesn't fit inside
-    // calculated learning days
-    // --------------------------------
+    // ========================================
+    // 5. Calculate learning workload
+    // ========================================
     //
-    // We must not lose topics.
+    // We DO NOT use:
     //
+    // topics / topicsPerDay
+    //
+    // Instead, every subtopic represents
+    // a learning unit.
+    //
+    // A normal learning unit gets 1 workload
+    // point.
+    //
+    // More complex concepts can later be
+    // given greater weight.
+    // ========================================
 
-    // --------------------------------
-    // 8. Create Revision days
-    // --------------------------------
+    const totalLearningUnits =
+      learningUnits.length
+
+    // ========================================
+    // 6. Calculate available learning days
+    // ========================================
+    //
+    // We reserve some time for:
+    //
+    // Learning
+    // Revision
+    // Practice
+    // Final Revision
+    //
+    // For very short plans, learning gets
+    // almost all available time.
+    // ========================================
+
+    let learningDays
+    let revisionDays
+    let practiceDays
+    let finalRevisionDays
+
+    if (totalDays <= 7) {
+      learningDays =
+        Math.max(1, totalDays - 1)
+
+      revisionDays =
+        totalDays - learningDays
+
+      practiceDays = 0
+      finalRevisionDays = 0
+    }
+
+    else if (totalDays <= 14) {
+      learningDays =
+        Math.max(
+          1,
+          Math.floor(totalDays * 0.70)
+        )
+
+      revisionDays = 1
+      practiceDays =
+        totalDays >= 10 ? 1 : 0
+
+      finalRevisionDays =
+        totalDays -
+        learningDays -
+        revisionDays -
+        practiceDays
+    }
+
+    else {
+      // --------------------------------
+      // Normal / long plans
+      //
+      // Learning gets roughly 65%
+      // Revision roughly 15%
+      // Practice roughly 12%
+      // Final revision gets the rest
+      // --------------------------------
+
+      learningDays =
+        Math.floor(totalDays * 0.65)
+
+      revisionDays =
+        Math.floor(totalDays * 0.15)
+
+      practiceDays =
+        Math.floor(totalDays * 0.12)
+
+      finalRevisionDays =
+        totalDays -
+        learningDays -
+        revisionDays -
+        practiceDays
+    }
+
+    // ========================================
+    // 7. Safety corrections
+    // ========================================
+
+    learningDays =
+      Math.max(1, learningDays)
+
+    revisionDays =
+      Math.max(0, revisionDays)
+
+    practiceDays =
+      Math.max(0, practiceDays)
+
+    finalRevisionDays =
+      Math.max(0, finalRevisionDays)
+
+    // ========================================
+    // 8. Make sure learning phase can contain
+    // the entire syllabus
+    // ========================================
+    //
+    // IMPORTANT:
+    //
+    // We calculate the workload from
+    // SUBTOPICS rather than top-level topics.
+    //
+    // We don't want 40 subtopics to be
+    // blindly pushed into 5 days.
+    // ========================================
+
+    const learningUnitsPerDay =
+      totalLearningUnits /
+      learningDays
+
+    // ========================================
+    // 9. Generate Learning Days
+    // ========================================
+
+    const learningPlans = []
+
+    let learningIndex = 0
+
+    for (
+      let day = 1;
+      day <= learningDays;
+      day++
+    ) {
+      const remainingUnits =
+        totalLearningUnits -
+        learningIndex
+
+      const remainingLearningDays =
+        learningDays -
+        day +
+        1
+
+      // Balanced distribution.
+      //
+      // Example:
+      //
+      // 40 units / 10 days
+      // → 4 per day
+      //
+      // 41 units / 10 days
+      // → 5,4,4,4...
+      //
+      const unitsForDay =
+        Math.ceil(
+          remainingUnits /
+            remainingLearningDays
+        )
+
+      const dayUnits =
+        learningUnits.slice(
+          learningIndex,
+          learningIndex +
+            unitsForDay
+        )
+
+      // Group units by topic
+      const topicMap = new Map()
+
+      dayUnits.forEach((unit) => {
+        const key =
+          unit.topicId?.toString() ||
+          unit.topic
+
+        if (!topicMap.has(key)) {
+          topicMap.set(key, {
+            topicId:
+              unit.topicId,
+
+            name:
+              unit.topic,
+
+            subtopics: [],
+          })
+        }
+
+        topicMap
+          .get(key)
+          .subtopics
+          .push({
+            subtopicId:
+              unit.subtopicId,
+
+            name:
+              unit.name,
+
+            mastery:
+              unit.mastery,
+
+            covered: {
+              status:
+                "pending",
+
+              completedAt:
+                null,
+            },
+          })
+      })
+
+      const topics = Array.from(
+        topicMap.values()
+      ).map((topic) => ({
+        topicId:
+          topic.topicId,
+
+        name:
+          topic.name,
+
+        subtopics:
+          topic.subtopics,
+
+        covered: {
+          status:
+            "pending",
+
+          completedAt:
+            null,
+        },
+
+        quiz: {
+          status:
+            "pending",
+
+          completedAt:
+            null,
+        },
+
+        notes: {
+          status:
+            "not_required",
+
+          completedAt:
+            null,
+        },
+
+        flashcards: {
+          status:
+            "not_required",
+
+          completedAt:
+            null,
+        },
+
+        mistakeReview: {
+          status:
+            "not_required",
+
+          completedAt:
+            null,
+        },
+
+        completed: false,
+
+        completedAt: null,
+      }))
+
+      learningPlans.push({
+        day,
+
+        phase:
+          "Learning",
+
+        topics,
+
+        tasks: [],
+
+        instructions: [
+          "Study the assigned subtopics.",
+          "Mark the covered activity after actually studying them.",
+          "Complete the quiz for each topic.",
+        ],
+
+        reason:
+          `Learning ${dayUnits.length} syllabus subtopics within today's available study time.`,
+
+        completed: false,
+
+        completedAt: null,
+      })
+
+      learningIndex +=
+        unitsForDay
+    }
+
+    // ========================================
+    // 10. Generate Revision Days
+    // ========================================
 
     const revisionPlans = []
 
@@ -290,63 +502,76 @@ for (
       const day =
         revisionStartDay + i
 
-      // Divide syllabus into revision groups.
-      const groupSize = Math.max(
-        1,
-        Math.ceil(
-          allTopics.length /
-            Math.max(1, revisionDays)
-        )
-      )
-
-      const startIndex =
-        i * groupSize
-
-      let revisionTopics =
-        allTopics.slice(
-          startIndex,
-          startIndex + groupSize
-        )
-
-      // If the group calculation leaves
-      // a revision day empty, use a small
-      // rotating group instead.
-      if (revisionTopics.length === 0) {
-        const rotatingIndex =
-          i % allTopics.length
-
-        revisionTopics = [
-          allTopics[rotatingIndex],
-        ]
-      }
-
       revisionPlans.push({
         day,
-        topics: revisionTopics,
-        phase: ["Revision"],
+
+        phase:
+          "Revision",
+
+        topics: [],
+
+        tasks: [
+          {
+            title:
+              "Active recall",
+
+            description:
+              "Recall previously learned concepts without immediately looking at your notes.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Review weak areas",
+
+            description:
+              "Focus on concepts where quiz performance or mastery is low.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Review mistakes",
+
+            description:
+              "Re-attempt previously incorrect questions and understand why the answers were wrong.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+        ],
+
+        instructions: [
+          "Do not simply reread everything.",
+          "Use active recall first.",
+          "Review mistakes and weak concepts.",
+        ],
+
+        reason:
+          "Revision is used to strengthen previously learned material.",
+
+        completed: false,
+
+        completedAt: null,
       })
     }
 
-    // --------------------------------
-    // 9. Create Practice days
-    // --------------------------------
+    // ========================================
+    // 11. Generate Practice Days
+    // ========================================
 
     const practicePlans = []
 
     const practiceStartDay =
-      revisionStartDay + revisionDays
-
-    // Divide topics into manageable groups
-    // rather than putting the entire syllabus
-    // on every practice day.
-
-    const practiceGroupSize = Math.max(
-      1,
-      Math.ceil(
-        allTopics.length /
-          Math.max(1, practiceDays)
-      )
-    )
+      revisionStartDay +
+      revisionDays
 
     for (
       let i = 0;
@@ -356,39 +581,76 @@ for (
       const day =
         practiceStartDay + i
 
-      const startIndex =
-        i * practiceGroupSize
-
-      let practiceTopics =
-        allTopics.slice(
-          startIndex,
-          startIndex + practiceGroupSize
-        )
-
-      if (practiceTopics.length === 0) {
-        const rotatingIndex =
-          i % allTopics.length
-
-        practiceTopics = [
-          allTopics[rotatingIndex],
-        ]
-      }
-
       practicePlans.push({
         day,
-        topics: practiceTopics,
-        phase: ["Practice"],
+
+        phase:
+          "Practice",
+
+        topics: [],
+
+        tasks: [
+          {
+            title:
+              "Practice questions",
+
+            description:
+              "Solve questions covering previously learned concepts.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Attempt quiz",
+
+            description:
+              "Complete a practice quiz and analyze incorrect answers.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Review mistakes",
+
+            description:
+              "Revisit mistakes made during practice.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+        ],
+
+        instructions: [
+          "Focus on applying concepts rather than rereading them.",
+          "Analyze every incorrect answer.",
+          "Record important mistakes for final revision.",
+        ],
+
+        reason:
+          "Practice converts learned concepts into active problem-solving ability.",
+
+        completed: false,
+
+        completedAt: null,
       })
     }
 
-    // --------------------------------
-    // 10. Create Final Revision days
-    // --------------------------------
+    // ========================================
+    // 12. Generate Final Revision Days
+    // ========================================
 
     const finalRevisionPlans = []
 
     const finalRevisionStartDay =
-      practiceStartDay + practiceDays
+      practiceStartDay +
+      practiceDays
 
     for (
       let i = 0;
@@ -398,47 +660,70 @@ for (
       const day =
         finalRevisionStartDay + i
 
-      let finalTopics
-
-      if (i === finalRevisionDays - 1) {
-        // Last day = complete syllabus revision
-        finalTopics = [...allTopics]
-      } else {
-        const groupSize = Math.max(
-          1,
-          Math.ceil(
-            allTopics.length /
-              Math.max(
-                1,
-                finalRevisionDays
-              )
-          )
-        )
-
-        const startIndex =
-          i * groupSize
-
-        finalTopics =
-          allTopics.slice(
-            startIndex,
-            startIndex + groupSize
-          )
-
-        if (finalTopics.length === 0) {
-          finalTopics = [...allTopics]
-        }
-      }
-
       finalRevisionPlans.push({
         day,
-        topics: finalTopics,
-        phase: ["Final Revision"],
+
+        phase:
+          "Final Revision",
+
+        topics: [],
+
+        tasks: [
+          {
+            title:
+              "Rapid concept revision",
+
+            description:
+              "Review important concepts and high-priority weak areas.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Final mistake review",
+
+            description:
+              "Revisit your accumulated mistakes before finishing the plan.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+
+          {
+            title:
+              "Final practice",
+
+            description:
+              "Complete a final mixed quiz or practice session.",
+
+            completed: false,
+
+            completedAt: null,
+          },
+        ],
+
+        instructions: [
+          "Prioritize weak topics.",
+          "Use active recall.",
+          "Avoid spending excessive time rereading familiar concepts.",
+        ],
+
+        reason:
+          "Final revision consolidates the syllabus before the study plan ends.",
+
+        completed: false,
+
+        completedAt: null,
       })
     }
 
-    // --------------------------------
-    // 11. Combine all phases
-    // --------------------------------
+    // ========================================
+    // 13. Combine phases
+    // ========================================
 
     const generatedPlans = [
       ...learningPlans,
@@ -447,144 +732,137 @@ for (
       ...finalRevisionPlans,
     ]
 
-    // --------------------------------
-    // 12. Make sure exactly planningDays
-    // --------------------------------
+    // ========================================
+    // 14. Create dates
+    // ========================================
 
-    const finalPlans =
-      generatedPlans
-        .slice(0, totalDays)
-        .map((plan, index) => ({
-          ...plan,
-          day: index + 1,
-        }))
+    const startDate =
+      new Date()
 
-    // --------------------------------
-    // 13. Create start date
-    // --------------------------------
-
-    const startDate = new Date()
-
-    startDate.setHours(0, 0, 0, 0)
-
-    // --------------------------------
-    // 14. Convert into StudyPlan format
-    // --------------------------------
+    startDate.setHours(
+      0,
+      0,
+      0,
+      0
+    )
 
     const dailyPlans =
-      finalPlans.map((item) => {
-        const date = new Date(startDate)
+      generatedPlans.map(
+        (plan, index) => {
+          const date =
+            new Date(startDate)
 
-        date.setDate(
-          startDate.getDate() +
-            (item.day - 1)
-        )
+          date.setDate(
+            startDate.getDate() +
+              index
+          )
 
-        const topics =
-          item.topics.map((topic) => ({
-            topicId: topic.topicId,
+          return {
+            ...plan,
 
-            name: topic.name,
+            day:
+              index + 1,
 
-            covered: {
-              status: "pending",
-              completedAt: null,
-            },
-
-            notes: {
-              status: "pending",
-              completedAt: null,
-            },
-
-            flashcards: {
-              status: "pending",
-              completedAt: null,
-            },
-
-            quiz: {
-              status: "pending",
-              completedAt: null,
-            },
-
-            mistakeReview: {
-              status: "not_required",
-              completedAt: null,
-            },
-
-            completed: false,
-
-            completedAt: null,
-          }))
-
-        return {
-          day: item.day,
-
-          date,
-
-          topics,
-
-          phase: item.phase,
-
-          completed: false,
-
-          completedAt: null,
+            date,
+          }
         }
-      })
+      )
 
-    // --------------------------------
-    // 15. Replace previous plan
-    // --------------------------------
+    // ========================================
+    // 15. Safety check
+    // ========================================
+
+    if (
+      dailyPlans.length !==
+      totalDays
+    ) {
+      return res.status(500).json({
+        message:
+          "Unable to generate the complete study plan.",
+      })
+    }
+
+    // ========================================
+    // 16. Replace old plan
+    // ========================================
 
     await StudyPlan.deleteMany({
       user: req.user._id,
     })
 
-    // --------------------------------
-    // 16. Save new plan
-    // --------------------------------
+    // ========================================
+    // 17. Save new plan
+    // ========================================
 
-    const plan = await StudyPlan.create({
-      user: req.user._id,
+    const plan =
+      await StudyPlan.create({
+        user:
+          req.user._id,
 
-      planningDays: totalDays,
+        planningDays:
+          totalDays,
 
-      hoursPerDay: studyHours,
+        hoursPerDay:
+          studyHours,
 
-      startDate,
+        startDate,
 
-      currentDay: 1,
+        currentDay: 1,
 
-      completedDays: [],
+        completedDays: [],
 
-      dailyPlans,
-    })
+        dailyPlans,
+      })
 
-    // --------------------------------
-    // 17. Response
-    // --------------------------------
+    // ========================================
+    // 18. Response
+    // ========================================
 
     return res.status(201).json({
       message:
         "Study plan created successfully.",
 
+      planningDays:
+        totalDays,
+
+      hoursPerDay:
+        studyHours,
+
+      totalLearningUnits,
+
+      learningDays,
+
+      revisionDays,
+
+      practiceDays,
+
+      finalRevisionDays,
+
+      averageLearningUnitsPerDay:
+        Number(
+          learningUnitsPerDay.toFixed(
+            2
+          )
+        ),
+
       plan,
     })
-  } 
-  catch (error) {
+  } catch (error) {
     console.error(
       "Setup Study Plan Error:",
       error
     )
 
     return res.status(500).json({
-      message: error.message,
+      message:
+        error.message,
     })
   }
 }
 
  // ========================
- //  Get Today Plan
- // ===========================
+// Get Today Plan
+// ========================
 const getTodayPlan = async (req, res) => {
   try {
     const studyPlan = await StudyPlan.findOne({
@@ -598,11 +876,10 @@ const getTodayPlan = async (req, res) => {
     }
 
     const currentDay = studyPlan.currentDay || 1
-
     const totalDays = studyPlan.planningDays
 
     // --------------------------------
-    // Check if entire plan is complete
+    // Entire plan completed
     // --------------------------------
 
     if (currentDay > totalDays) {
@@ -610,18 +887,23 @@ const getTodayPlan = async (req, res) => {
         currentDay: totalDays,
         totalDays,
         daysLeft: 0,
-        phase: ["Completed"],
+        phase: "Completed",
         plan: null,
         topics: [],
+        tasks: [],
         dayCompleted: true,
         progress: 100,
+        completedTopics: 0,
+        totalTopics: 0,
+        remainingActivities: [],
+        canCompleteDay: true,
         message:
           "Congratulations! You have completed your study plan.",
       })
     }
 
     // --------------------------------
-    // Find current study day
+    // Find today's scheduled plan
     // --------------------------------
 
     const todayPlan = studyPlan.dailyPlans.find(
@@ -630,83 +912,246 @@ const getTodayPlan = async (req, res) => {
 
     if (!todayPlan) {
       return res.status(404).json({
-        message: `Study Day ${currentDay} was not found.`,
+        message:
+          `Study Day ${currentDay} was not found.`,
       })
     }
 
-    // --------------------------------
-    // Calculate today's progress
-    // --------------------------------
+    // ========================================
+    // BUILD CARRY-FORWARD TOPICS
+    // ========================================
+    //
+    // We look at previous days.
+    //
+    // Any topic that still has REQUIRED
+    // activities pending can be carried forward.
+    //
+    // We do NOT carry completed topics.
+    //
+    // We also avoid duplicating a topic that
+    // is already scheduled today.
+    // ========================================
 
-    const totalTopics = todayPlan.topics.length
+    const carryForwardTopics = []
+
+    const todayTopicIds = new Set(
+      todayPlan.topics.map(
+        (topic) =>
+          topic.topicId?.toString()
+      )
+    )
+
+    for (
+      let day = 1;
+      day < currentDay;
+      day++
+    ) {
+      const previousPlan =
+        studyPlan.dailyPlans.find(
+          (plan) => plan.day === day
+        )
+
+      if (!previousPlan) {
+        continue
+      }
+
+      previousPlan.topics.forEach(
+        (previousTopic) => {
+          // --------------------------------
+          // Check required activities
+          // --------------------------------
+
+          const coveredPending =
+            previousTopic.covered?.status !==
+            "completed"
+
+          const quizPending =
+            previousTopic.quiz?.status !==
+            "completed"
+
+          const mistakePending =
+            previousTopic.mistakeReview?.status ===
+            "pending"
+
+          const topicIncomplete =
+            coveredPending ||
+            quizPending ||
+            mistakePending
+
+          if (!topicIncomplete) {
+            return
+          }
+
+          // --------------------------------
+          // Don't duplicate today's topic
+          // --------------------------------
+
+          const topicId =
+            previousTopic.topicId?.toString()
+
+          if (
+            topicId &&
+            todayTopicIds.has(topicId)
+          ) {
+            return
+          }
+
+          // --------------------------------
+          // Don't add same topic twice
+          // --------------------------------
+
+          const alreadyAdded =
+            carryForwardTopics.some(
+              (topic) =>
+                topic.topicId?.toString() ===
+                topicId
+            )
+
+          if (alreadyAdded) {
+            return
+          }
+
+          // --------------------------------
+          // Add a copy
+          // --------------------------------
+
+          carryForwardTopics.push(
+            previousTopic.toObject
+              ? previousTopic.toObject()
+              : previousTopic
+          )
+        }
+      )
+    }
+
+    // ========================================
+    // EFFECTIVE TODAY TOPICS
+    // ========================================
+    //
+    // Carry-forward first.
+    // Today's new topics second.
+    // ========================================
+
+    const effectiveTopics = [
+      ...carryForwardTopics,
+      ...todayPlan.topics,
+    ]
+
+    // ========================================
+    // Calculate progress
+    // ========================================
+
+    const totalTopics =
+      effectiveTopics.length
 
     let completedTopics = 0
 
-    todayPlan.topics.forEach((topic) => {
-      if (topic.completed) {
-        completedTopics++
+    effectiveTopics.forEach(
+      (topic) => {
+        if (topic.completed) {
+          completedTopics++
+        }
       }
-    })
+    )
 
     const progress =
       totalTopics > 0
         ? Math.round(
-            (completedTopics / totalTopics) * 100
+            (completedTopics /
+              totalTopics) *
+              100
           )
         : 0
 
-    // --------------------------------
-// Find remaining REQUIRED activities
-// --------------------------------
+    // ========================================
+    // Required activities
+    // ========================================
 
-const remainingActivities = []
+    const remainingActivities = []
 
-todayPlan.topics.forEach((topic) => {
+    effectiveTopics.forEach(
+      (topic) => {
+        // -------------------------------
+        // Covered — REQUIRED
+        // -------------------------------
 
-  // Covered — REQUIRED
-  if (
-    topic.covered?.status !== "completed"
-  ) {
-    remainingActivities.push({
-      topicId: topic.topicId,
-      topic: topic.name,
-      activity: "covered",
-    })
-  }
+        if (
+          topic.covered?.status !==
+          "completed"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
 
-  // Quiz — REQUIRED
-  if (
-    topic.quiz?.status !== "completed"
-  ) {
-    remainingActivities.push({
-      topicId: topic.topicId,
-      topic: topic.name,
-      activity: "quiz",
-    })
-  }
+            topic:
+              topic.name,
 
-  // Mistake Review — REQUIRED only when pending
-  if (
-    topic.mistakeReview?.status === "pending"
-  ) {
-    remainingActivities.push({
-      topicId: topic.topicId,
-      topic: topic.name,
-      activity: "mistakeReview",
-    })
-  }
-})
+            activity:
+              "covered",
+          })
+        }
 
-    // --------------------------------
+        // -------------------------------
+        // Quiz — REQUIRED
+        // -------------------------------
+
+        if (
+          topic.quiz?.status !==
+          "completed"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "quiz",
+          })
+        }
+
+        // -------------------------------
+        // Mistake Review
+        // REQUIRED only when pending
+        // -------------------------------
+
+        if (
+          topic.mistakeReview?.status ===
+          "pending"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "mistakeReview",
+          })
+        }
+      }
+    )
+
+    // ========================================
     // Remaining days
-    // --------------------------------
+    // ========================================
 
     const daysLeft =
       totalDays - currentDay
 
-    // --------------------------------
-    // Return today's study plan
-    // --------------------------------
+    // ========================================
+    // Day can be completed only when ALL
+    // required activities are complete
+    // ========================================
+
+    const canCompleteDay =
+      remainingActivities.length === 0
+
+    // ========================================
+    // Return effective today's plan
+    // ========================================
 
     return res.status(200).json({
       currentDay,
@@ -715,13 +1160,28 @@ todayPlan.topics.forEach((topic) => {
 
       daysLeft,
 
-      phase: todayPlan.phase,
+      phase:
+        todayPlan.phase,
 
-      date: todayPlan.date,
+      date:
+        todayPlan.date,
 
-      topics: todayPlan.topics,
+      // Effective topics include
+      // carry-forward work.
+      topics:
+        effectiveTopics,
 
-      dayCompleted: todayPlan.completed,
+      tasks:
+        todayPlan.tasks || [],
+
+      instructions:
+        todayPlan.instructions || [],
+
+      reason:
+        todayPlan.reason || "",
+
+      dayCompleted:
+        todayPlan.completed,
 
       progress,
 
@@ -729,22 +1189,42 @@ todayPlan.topics.forEach((topic) => {
 
       totalTopics,
 
+      carryForwardCount:
+        carryForwardTopics.length,
+
+      carryForwardTopics:
+        carryForwardTopics.map(
+          (topic) => ({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+          })
+        ),
+
       remainingActivities,
 
-      canCompleteDay:
-        remainingActivities.length === 0,
+      canCompleteDay,
 
       plan: {
-        title: `Study Day ${currentDay}`,
+        title:
+          `Study Day ${currentDay}`,
 
         goal:
-          todayPlan.phase.includes("Learning")
-            ? "Learn today's topics"
-            : todayPlan.phase.includes("Revision")
-            ? "Revise today's topics"
-            : todayPlan.phase.includes("Practice")
-            ? "Practice today's topics"
-            : "Final revision",
+          todayPlan.phase ===
+          "Learning"
+            ? "Learn today's topics and complete required activities."
+            : todayPlan.phase ===
+              "Revision"
+            ? "Revise weak and previously learned topics."
+            : todayPlan.phase ===
+              "Practice"
+            ? "Practice and test your knowledge."
+            : todayPlan.phase ===
+              "Final Revision"
+            ? "Complete your final revision."
+            : "Complete today's study tasks.",
       },
     })
   } catch (error) {
@@ -754,7 +1234,8 @@ todayPlan.topics.forEach((topic) => {
     )
 
     return res.status(500).json({
-      message: error.message,
+      message:
+        error.message,
     })
   }
 }
@@ -779,15 +1260,20 @@ const completeTodayPlan = async (req, res) => {
     // Get current study day
     // --------------------------------
 
-    const currentDay = studyPlan.currentDay || 1
+    const currentDay =
+      studyPlan.currentDay || 1
 
     // --------------------------------
     // Check if entire plan is complete
     // --------------------------------
 
-    if (currentDay > studyPlan.planningDays) {
+    if (
+      currentDay >
+      studyPlan.planningDays
+    ) {
       return res.status(400).json({
-        message: "All study days are already completed.",
+        message:
+          "All study days are already completed.",
       })
     }
 
@@ -797,12 +1283,14 @@ const completeTodayPlan = async (req, res) => {
 
     const currentPlan =
       studyPlan.dailyPlans.find(
-        (plan) => plan.day === currentDay
+        (plan) =>
+          plan.day === currentDay
       )
 
     if (!currentPlan) {
       return res.status(404).json({
-        message: `Study Day ${currentDay} not found.`,
+        message:
+          `Study Day ${currentDay} not found.`,
       })
     }
 
@@ -817,61 +1305,180 @@ const completeTodayPlan = async (req, res) => {
       })
     }
 
+    // ========================================
+    // Build effective today's topics
+    // ========================================
+    //
+    // This includes:
+    //
+    // 1. Unfinished topics from previous days
+    // 2. Today's newly scheduled topics
+    //
+    // Carry-forward topics are checked FIRST.
+    // ========================================
+
+    const effectiveTopics = []
+
+    const addedTopicIds =
+      new Set()
+
     // --------------------------------
-    // Check all required activities
+    // Find unfinished previous topics
     // --------------------------------
+
+    for (
+      let day = 1;
+      day < currentDay;
+      day++
+    ) {
+      const previousPlan =
+        studyPlan.dailyPlans.find(
+          (plan) =>
+            plan.day === day
+        )
+
+      if (!previousPlan) {
+        continue
+      }
+
+      previousPlan.topics.forEach(
+        (topic) => {
+          // Only unfinished topics
+          if (topic.completed) {
+            return
+          }
+
+          const topicId =
+            topic.topicId?.toString()
+
+          // Avoid duplicates
+          if (
+            topicId &&
+            !addedTopicIds.has(
+              topicId
+            )
+          ) {
+            effectiveTopics.push(
+              topic
+            )
+
+            addedTopicIds.add(
+              topicId
+            )
+          }
+        }
+      )
+    }
+
+    // --------------------------------
+    // Add today's topics
+    // --------------------------------
+
+    currentPlan.topics.forEach(
+      (topic) => {
+        const topicId =
+          topic.topicId?.toString()
+
+        if (
+          topicId &&
+          !addedTopicIds.has(
+            topicId
+          )
+        ) {
+          effectiveTopics.push(
+            topic
+          )
+
+          addedTopicIds.add(
+            topicId
+          )
+        }
+      }
+    )
+
+    // ========================================
+    // Check required activities
+    // ========================================
 
     const remainingActivities = []
 
-    currentPlan.topics.forEach((topic) => {
-      // Covered
-      if (
-        topic.covered?.status !== "completed"
-      ) {
-        remainingActivities.push({
-          topicId: topic.topicId,
-          topic: topic.name,
-          activity: "covered",
-        })
+    effectiveTopics.forEach(
+      (topic) => {
+        // --------------------------------
+        // Covered — REQUIRED
+        // --------------------------------
+
+        if (
+          topic.covered?.status !==
+          "completed"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "covered",
+          })
+        }
+
+        // --------------------------------
+        // Quiz — REQUIRED
+        // --------------------------------
+
+        if (
+          topic.quiz?.status !==
+          "completed"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "quiz",
+          })
+        }
+
+        // --------------------------------
+        // Mistake Review
+        //
+        // Required only when pending
+        // --------------------------------
+
+        if (
+          topic.mistakeReview?.status ===
+          "pending"
+        ) {
+          remainingActivities.push({
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "mistakeReview",
+          })
+        }
       }
+    )
 
-      // Quiz
-      if (
-        topic.quiz?.status !== "completed"
-      ) {
-        remainingActivities.push({
-          topicId: topic.topicId,
-          topic: topic.name,
-          activity: "quiz",
-        })
-      }
+    // ========================================
+    // Don't allow completion
+    // ========================================
 
-      // Mistake Review
-      //
-      // Only required when status is pending.
-      // "not_required" is considered complete.
-      //
-      if (
-        topic.mistakeReview?.status === "pending"
-      ) {
-        remainingActivities.push({
-          topicId: topic.topicId,
-          topic: topic.name,
-          activity: "mistakeReview",
-        })
-      }
-    })
-
-    // --------------------------------
-    // Don't allow day completion if
-    // activities are still pending
-    // --------------------------------
-
-    if (remainingActivities.length > 0) {
+    if (
+      remainingActivities.length > 0
+    ) {
       return res.status(400).json({
         message:
           "Today's tasks are not completed yet.",
-        
+
         currentDay,
 
         dayCompleted: false,
@@ -882,74 +1489,84 @@ const completeTodayPlan = async (req, res) => {
       })
     }
 
-    // --------------------------------
-    // Mark current day complete
-    // --------------------------------
+    // ========================================
+    // Mark today's actual plan complete
+    // ========================================
 
-    currentPlan.completed = true
-    currentPlan.completedAt = new Date()
+    currentPlan.completed =
+      true
 
-    // --------------------------------
+    currentPlan.completedAt =
+      new Date()
+
+    // ========================================
     // Add to completedDays
-    // --------------------------------
+    // ========================================
 
     const alreadyRecorded =
       studyPlan.completedDays.some(
-        (day) => day.day === currentDay
+        (day) =>
+          day.day === currentDay
       )
 
     if (!alreadyRecorded) {
       studyPlan.completedDays.push({
         day: currentDay,
-        completedAt: new Date(),
+
+        completedAt:
+          new Date(),
       })
     }
 
-    // --------------------------------
-    // Move to next study day
-    // --------------------------------
+    // ========================================
+    // Advance current day
+    // ========================================
 
     studyPlan.currentDay =
       currentDay + 1
 
-    // --------------------------------
+    // ========================================
     // Save
-    // --------------------------------
+    // ========================================
 
     await studyPlan.save()
 
-    // --------------------------------
-    // Check if entire plan is now complete
-    // --------------------------------
+    // ========================================
+    // Check entire plan
+    // ========================================
 
     const planCompleted =
       studyPlan.currentDay >
       studyPlan.planningDays
 
-    // --------------------------------
+    // ========================================
     // Response
-    // --------------------------------
+    // ========================================
 
     return res.status(200).json({
       message: planCompleted
         ? "Congratulations! You completed the entire study plan."
         : "Today's study plan completed successfully.",
 
-      completedDay: currentDay,
+      completedDay:
+        currentDay,
 
-      currentDay: studyPlan.currentDay,
+      currentDay:
+        studyPlan.currentDay,
 
-      totalDays: studyPlan.planningDays,
+      totalDays:
+        studyPlan.planningDays,
 
       completedDays:
         studyPlan.completedDays.length,
 
-      remainingDays: Math.max(
-        studyPlan.planningDays -
-          studyPlan.currentDay +
-          1,
-        0
-      ),
+      remainingDays:
+        Math.max(
+          studyPlan.planningDays -
+            studyPlan.currentDay +
+            1,
+          0
+        ),
 
       planCompleted,
     })
@@ -960,13 +1577,15 @@ const completeTodayPlan = async (req, res) => {
     )
 
     return res.status(500).json({
-      message: error.message,
+      message:
+        error.message,
     })
   }
-}// ===============================
+}
+
+// ===============================
 // Update Topic Activity
 // ===============================
-
 const updateTopicActivity = async (req, res) => {
   try {
     const { topicId, activity } = req.body
@@ -1034,54 +1653,73 @@ const updateTopicActivity = async (req, res) => {
     }
 
     // --------------------------------
-    // 5. Find current day
+    // 5. Find the topic
+    //
+    // Search from the current day backwards.
+    //
+    // This allows a carried-forward topic
+    // from Day 1 to be updated while the
+    // user is currently on Day 2.
     // --------------------------------
 
-    const currentPlan =
-      studyPlan.dailyPlans.find(
-        (plan) =>
-          plan.day === currentDay
-      )
+    let topicData = null
+    let sourcePlan = null
 
-    if (!currentPlan) {
+    for (
+      let day = currentDay;
+      day >= 1;
+      day--
+    ) {
+      const plan =
+        studyPlan.dailyPlans.find(
+          (item) =>
+            item.day === day
+        )
+
+      if (!plan) {
+        continue
+      }
+
+      const foundTopic =
+        plan.topics.find(
+          (topic) =>
+            topic.topicId &&
+            topic.topicId.toString() ===
+              topicId.toString()
+        )
+
+      if (foundTopic) {
+        topicData = foundTopic
+        sourcePlan = plan
+        break
+      }
+    }
+
+    // --------------------------------
+    // 6. Topic not found
+    // --------------------------------
+
+    if (!topicData || !sourcePlan) {
       return res.status(404).json({
         message:
-          `Study Day ${currentDay} not found.`,
+          "Topic not found in the study plan.",
       })
     }
 
     // --------------------------------
-    // 6. Don't modify completed day
+    // 7. Don't modify a completed topic
     // --------------------------------
 
-    if (currentPlan.completed) {
+    if (topicData.completed) {
       return res.status(400).json({
         message:
-          "Today's study plan is already completed.",
+          "This topic is already completed.",
+        topic: topicData,
       })
     }
 
     // --------------------------------
-    // 7. Find topic by ID
-    // --------------------------------
-
-    const topicData =
-      currentPlan.topics.find(
-        (topic) =>
-          topic.topicId &&
-          topic.topicId.toString() ===
-            topicId.toString()
-      )
-
-    if (!topicData) {
-      return res.status(404).json({
-        message:
-          "Topic not found in today's study plan.",
-      })
-    }
-
-    // --------------------------------
-    // 8. Check mistake review
+    // 8. Mistake review validation
     // --------------------------------
 
     if (
@@ -1096,8 +1734,15 @@ const updateTopicActivity = async (req, res) => {
     }
 
     // --------------------------------
-    // 9. Mark activity complete
+    // 9. Mark activity completed
     // --------------------------------
+
+    if (!topicData[activity]) {
+      return res.status(400).json({
+        message:
+          `Activity '${activity}' is not available for this topic.`,
+      })
+    }
 
     topicData[activity].status =
       "completed"
@@ -1108,32 +1753,37 @@ const updateTopicActivity = async (req, res) => {
     // --------------------------------
     // 10. Check topic completion
     // --------------------------------
-
+    //
+    // Required:
+    // Covered
+    // Quiz
+    //
+    // Conditional:
+    // Mistake Review
+    //
+    // Optional:
+    // Notes
+    // Flashcards
     // --------------------------------
-// Required activities
-// --------------------------------
-//
-// Covered + Quiz are always required.
-// Mistake Review is required only when
-// its status is "pending".
-//
-// Notes and Flashcards are optional.
-//
 
-const coveredCompleted =
-  topicData.covered?.status === "completed"
+    const coveredCompleted =
+      topicData.covered?.status ===
+      "completed"
 
-const quizCompleted =
-  topicData.quiz?.status === "completed"
+    const quizCompleted =
+      topicData.quiz?.status ===
+      "completed"
 
-const mistakeReviewCompleted =
-  topicData.mistakeReview?.status === "completed" ||
-  topicData.mistakeReview?.status === "not_required"
+    const mistakeReviewCompleted =
+      topicData.mistakeReview?.status ===
+        "completed" ||
+      topicData.mistakeReview?.status ===
+        "not_required"
 
-const topicCompleted =
-  coveredCompleted &&
-  quizCompleted &&
-  mistakeReviewCompleted
+    const topicCompleted =
+      coveredCompleted &&
+      quizCompleted &&
+      mistakeReviewCompleted
 
     topicData.completed =
       topicCompleted
@@ -1144,15 +1794,104 @@ const topicCompleted =
         : null
 
     // --------------------------------
-    // 11. Calculate progress
+    // 11. Calculate EFFECTIVE today
+    //
+    // Include:
+    // - unfinished previous topics
+    // - today's topics
+    // --------------------------------
+
+    const effectiveTopics = []
+
+    const addedTopicIds =
+      new Set()
+
+    // --------------------------------
+    // Previous unfinished topics
+    // --------------------------------
+
+    for (
+      let day = 1;
+      day < currentDay;
+      day++
+    ) {
+      const previousPlan =
+        studyPlan.dailyPlans.find(
+          (plan) =>
+            plan.day === day
+        )
+
+      if (!previousPlan) {
+        continue
+      }
+
+      previousPlan.topics.forEach(
+        (topic) => {
+          const incomplete =
+            !topic.completed
+
+          if (!incomplete) {
+            return
+          }
+
+          const id =
+            topic.topicId?.toString()
+
+          if (
+            id &&
+            !addedTopicIds.has(id)
+          ) {
+            effectiveTopics.push(
+              topic
+            )
+
+            addedTopicIds.add(id)
+          }
+        }
+      )
+    }
+
+    // --------------------------------
+    // Today's topics
+    // --------------------------------
+
+    const currentPlan =
+      studyPlan.dailyPlans.find(
+        (plan) =>
+          plan.day === currentDay
+      )
+
+    if (currentPlan) {
+      currentPlan.topics.forEach(
+        (topic) => {
+          const id =
+            topic.topicId?.toString()
+
+          if (
+            id &&
+            !addedTopicIds.has(id)
+          ) {
+            effectiveTopics.push(
+              topic
+            )
+
+            addedTopicIds.add(id)
+          }
+        }
+      )
+    }
+
+    // --------------------------------
+    // 12. Calculate progress
     // --------------------------------
 
     const totalTopics =
-      currentPlan.topics.length
+      effectiveTopics.length
 
     const completedTopics =
-      currentPlan.topics.filter(
-        (topic) => topic.completed
+      effectiveTopics.filter(
+        (topic) =>
+          topic.completed
       ).length
 
     const progress =
@@ -1165,73 +1904,76 @@ const topicCompleted =
         : 0
 
     // --------------------------------
-    // 12. Find remaining activities
+    // 13. Find remaining required
+    // activities
     // --------------------------------
 
     const remainingActivities = []
 
-    currentPlan.topics.forEach((topic) => {
+    effectiveTopics.forEach(
+      (topic) => {
+        // Covered — REQUIRED
         if (
-          topic.covered?.status !== "completed"
+          topic.covered?.status !==
+          "completed"
         ) {
           remainingActivities.push({
-            topicId: topic.topicId,
-            topic: topic.name,
-            activity: "covered",
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "covered",
           })
         }
 
-        // if (
-        //   topic.notes?.status !== "completed"
-        // ) {
-        //   remainingActivities.push({
-        //     topicId: topic.topicId,
-        //     topic: topic.name,
-        //     activity: "notes",
-        //   })
-        // }
-
-        // if (
-        //   topic.flashcards?.status !==
-        //   "completed"
-        // ) {
-        //   remainingActivities.push({
-        //     topicId: topic.topicId,
-        //     topic: topic.name,
-        //     activity: "flashcards",
-        //   })
-        // }
-
+        // Quiz — REQUIRED
         if (
-          topic.quiz?.status !== "completed"
+          topic.quiz?.status !==
+          "completed"
         ) {
           remainingActivities.push({
-            topicId: topic.topicId,
-            topic: topic.name,
-            activity: "quiz",
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "quiz",
           })
         }
 
+        // Mistake Review —
+        // REQUIRED only when pending
         if (
-          topic.mistakeReview?.status === "pending"
+          topic.mistakeReview?.status ===
+          "pending"
         ) {
           remainingActivities.push({
-            topicId: topic.topicId,
-            topic: topic.name,
-            activity: "mistakeReview",
+            topicId:
+              topic.topicId,
+
+            topic:
+              topic.name,
+
+            activity:
+              "mistakeReview",
           })
         }
       }
     )
 
     // --------------------------------
-    // 13. Save
+    // 14. Save
     // --------------------------------
 
     await studyPlan.save()
 
     // --------------------------------
-    // 14. Response
+    // 15. Response
     // --------------------------------
 
     return res.status(200).json({
@@ -1240,13 +1982,18 @@ const topicCompleted =
 
       currentDay,
 
-      topic: topicData,
+      sourceDay:
+        sourcePlan.day,
+
+      topic:
+        topicData,
 
       activity,
 
       topicCompleted,
 
-      dayProgress: progress,
+      dayProgress:
+        progress,
 
       completedTopics,
 
@@ -1264,7 +2011,8 @@ const topicCompleted =
     )
 
     return res.status(500).json({
-      message: error.message,
+      message:
+        error.message,
     })
   }
 }
