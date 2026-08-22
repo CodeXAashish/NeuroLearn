@@ -34,47 +34,53 @@ function WelcomeSection() {
     "Student"
 
   useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        // Hero Data
-       const [hero, planData] = await Promise.all([
-       getHeroData(),
-      getTodayPlan(),
-    ])
+  const loadDashboard = async () => {
+    try {
+      const [hero, planData] = await Promise.all([
+        getHeroData(),
+        getTodayPlan(),
+      ])
 
       setHeroData(hero)
 
-        if (planData?.plan) {
-          const topicsMatch = planData.plan.match(
-            /Today's Topics:\s*([\s\S]*)/i
-          )
+      // -------------------------------
+      // Today's goal
+      // -------------------------------
 
-          if (topicsMatch) {
-            const firstTopic = topicsMatch[1]
-              .split("\n")
-              .find((line) =>
-                line.trim().startsWith("-")
-              )
+     if (planData?.topics?.length > 0) {
+  const topicGoals = planData.topics
+    .map((topic) => {
+      const subtopics =
+        topic.subtopics
+          ?.map((subtopic) => subtopic.name)
+          .filter(Boolean) || []
 
-            setTodayGoal(
-              firstTopic
-                ? firstTopic.replace("-", "").trim()
-                : "Study Session"
-            )
-          } else {
-            setTodayGoal("Study Session")
-          }
-        } else {
-          setTodayGoal("No study plan")
-        }
-      } catch (error) {
-        console.error(error)
-        setTodayGoal("No study plan")
+      if (subtopics.length > 0) {
+        return `${topic.name}: ${subtopics.join(", ")}`
       }
-    }
 
-    loadDashboard()
-  }, [])
+      return topic.name
+    })
+    .filter(Boolean)
+
+  setTodayGoal(
+    topicGoals.length > 0
+      ? `Study: ${topicGoals.join(" • ")}`
+      : "Study Session"
+  )
+} else {
+  setTodayGoal("No study plan")
+}
+  }  catch (error) {
+    console.error(
+      "Dashboard loading error:",
+      error
+    )
+    setTodayGoal("No study plan")
+  }
+}
+  loadDashboard()
+}, [])
 
   const handleContinueLearning = () => {
   if (todayGoal === "Loading...") {

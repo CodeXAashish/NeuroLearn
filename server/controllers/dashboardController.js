@@ -2,9 +2,12 @@ const StudyPlan = require("../models/StudyPlan")
 const client = require("../ai/openrouter")
 
 const {
-    calculateDayProgress,
+  calculateDayProgress,
 } = require("../helpers/progressHelper")
 
+// ========================================
+// Get Hero Data
+// ========================================
 
 const getHeroData = async (req, res) => {
   try {
@@ -22,15 +25,12 @@ const getHeroData = async (req, res) => {
       })
     }
 
-    const totalDays = studyPlan.dailyPlans.length
+    const totalDays =
+      studyPlan.dailyPlans.length
 
-const nextPlan = studyPlan.dailyPlans.find(
-  (plan) => !plan.completed
-)
-
-const currentDay = nextPlan
-  ? nextPlan.day
-  : totalDays
+    // Current study day is the source of truth
+    const currentDay =
+      studyPlan.currentDay || 1
 
     const completedDays =
       studyPlan.completedDays.length
@@ -42,7 +42,7 @@ const currentDay = nextPlan
           )
         : 0
 
-    res.json({
+    return res.json({
       streak: completedDays,
       progress,
       completedDays,
@@ -50,68 +50,235 @@ const currentDay = nextPlan
       currentDay,
     })
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "Get Hero Data Error:",
+      error
+    )
+
+    return res.status(500).json({
       message: error.message,
     })
   }
 }
+
+// ========================================
+// Get Continue Learning
+// ========================================
+
 const getContinueLearning = async (req, res) => {
   try {
-    const studyPlan = await StudyPlan.findOne({
-      user: req.user._id,
-    })
+    const studyPlan =
+      await StudyPlan.findOne({
+        user: req.user._id,
+      })
+
+    // --------------------------------
+    // No study plan
+    // --------------------------------
 
     if (!studyPlan) {
       return res.json({
         topic: "No Study Plan",
+
+        previousDay: null,
+        previousTopics: [],
+
+        currentDay: null,
+        currentTopics: [],
+
         progress: 0,
-        lastStudied: "Never",
-        estimatedTime: 0,
         status: "Not Started",
+
         nextRoute: "/planner",
       })
     }
 
-    const todayPlan = studyPlan.dailyPlans.find(
-      (plan) => !plan.completed
-    )
+    // --------------------------------
+    // Current study day
+    // --------------------------------
 
-    if (!todayPlan) {
+    const currentDay =
+      studyPlan.currentDay || 1
+
+    // --------------------------------
+    // Entire plan completed
+    // --------------------------------
+
+    if (
+      currentDay >
+      studyPlan.planningDays
+    ) {
       return res.json({
         topic: "Study Plan Completed",
+
+        previousDay:
+          studyPlan.planningDays,
+
+        previousTopics: [],
+
+        currentDay:
+          studyPlan.planningDays,
+
+        currentTopics: [],
+
         progress: 100,
-        lastStudied: "Completed",
-        estimatedTime: 0,
+
         status: "Completed",
+
         nextRoute: "/dashboard",
       })
     }
 
-    const progress = calculateDayProgress(todayPlan)
+    // --------------------------------
+    // Current day plan
+    // --------------------------------
 
-    const topicNames = todayPlan.topics
-      .map((topic) => topic.name)
-      .join(", ")
+    const todayPlan =
+      studyPlan.dailyPlans.find(
+        (plan) =>
+          plan.day === currentDay
+      )
 
-    res.json({
-      topic: topicNames,
+    if (!todayPlan) {
+      return res.status(404).json({
+        message:
+          `Study Day ${currentDay} not found.`,
+      })
+    }
+
+    // --------------------------------
+    // Previous study day
+    // --------------------------------
+
+    const previousDay =
+      currentDay > 1
+        ? currentDay - 1
+        : null
+
+    const previousPlan =
+      previousDay
+        ? studyPlan.dailyPlans.find(
+            (plan) =>
+              plan.day === previousDay
+          )
+        : null
+
+    // --------------------------------
+    // Previous topics
+    // --------------------------------
+
+    const previousTopics =
+      previousPlan?.topics?.map(
+        (topic) => ({
+          name: topic.name,
+
+          subtopics:
+            topic.subtopics
+              ?.map(
+                (subtopic) =>
+                  subtopic.name
+              )
+              .filter(Boolean) || [],
+
+          completed:
+            topic.completed,
+        })
+      ) || []
+
+    // --------------------------------
+    // Current topics
+    // --------------------------------
+
+    const currentTopics =
+      todayPlan.topics?.map(
+        (topic) => ({
+          name: topic.name,
+
+          subtopics:
+            topic.subtopics
+              ?.map(
+                (subtopic) =>
+                  subtopic.name
+              )
+              .filter(Boolean) || [],
+
+          completed:
+            topic.completed,
+        })
+      ) || []
+
+    // --------------------------------
+    // Current day progress
+    // --------------------------------
+
+    const progress =
+      calculateDayProgress(
+        todayPlan
+      )
+
+    // --------------------------------
+    // Current topic names
+    // --------------------------------
+
+    const topicNames =
+      currentTopics
+        .map(
+          (topic) =>
+            topic.name
+        )
+        .filter(Boolean)
+
+    // --------------------------------
+    // Status
+    // --------------------------------
+
+    const status =
+      todayPlan.completed
+        ? "Completed"
+        : progress > 0
+        ? "In Progress"
+        : "Not Started"
+
+    // --------------------------------
+    // Response
+    // --------------------------------
+
+    return res.json({
+      topic:
+        topicNames.length > 0
+          ? topicNames.join(", ")
+          : "Today's Study",
+
+      previousDay,
+
+      previousTopics,
+
+      currentDay,
+
+      currentTopics,
+
       progress,
-      lastStudied: "Today",
-      estimatedTime: 0,
-      status:
-        progress === 100
-          ? "Completed"
-          : progress > 0
-          ? "In Progress"
-          : "Not Started",
+
+      status,
+
       nextRoute: "/planner",
     })
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "Get Continue Learning Error:",
+      error
+    )
+
+    return res.status(500).json({
       message: error.message,
     })
   }
 }
+
+// ========================================
+// Exports
+// ========================================
+
 module.exports = {
   getHeroData,
   getContinueLearning,
