@@ -871,12 +871,16 @@ const getTodayPlan = async (req, res) => {
 
     if (!studyPlan) {
       return res.status(404).json({
-        message: "Please setup your study plan first.",
+        message:
+          "Please setup your study plan first.",
       })
     }
 
-    const currentDay = studyPlan.currentDay || 1
-    const totalDays = studyPlan.planningDays
+    const currentDay =
+      studyPlan.currentDay || 1
+
+    const totalDays =
+      studyPlan.planningDays
 
     // --------------------------------
     // Entire plan completed
@@ -891,24 +895,29 @@ const getTodayPlan = async (req, res) => {
         plan: null,
         topics: [],
         tasks: [],
+        instructions: [],
+        reason: "",
         dayCompleted: true,
         progress: 100,
         completedTopics: 0,
         totalTopics: 0,
         remainingActivities: [],
         canCompleteDay: true,
+
         message:
           "Congratulations! You have completed your study plan.",
       })
     }
 
     // --------------------------------
-    // Find today's scheduled plan
+    // Find current study day
     // --------------------------------
 
-    const todayPlan = studyPlan.dailyPlans.find(
-      (plan) => plan.day === currentDay
-    )
+    const todayPlan =
+      studyPlan.dailyPlans.find(
+        (plan) =>
+          plan.day === currentDay
+      )
 
     if (!todayPlan) {
       return res.status(404).json({
@@ -917,142 +926,25 @@ const getTodayPlan = async (req, res) => {
       })
     }
 
-    // ========================================
-    // BUILD CARRY-FORWARD TOPICS
-    // ========================================
-    //
-    // We look at previous days.
-    //
-    // Any topic that still has REQUIRED
-    // activities pending can be carried forward.
-    //
-    // We do NOT carry completed topics.
-    //
-    // We also avoid duplicating a topic that
-    // is already scheduled today.
-    // ========================================
+    // --------------------------------
+    // Today's topics only
+    // --------------------------------
 
-    const carryForwardTopics = []
+    const topics =
+      todayPlan.topics || []
 
-    const todayTopicIds = new Set(
-      todayPlan.topics.map(
-        (topic) =>
-          topic.topicId?.toString()
-      )
-    )
-
-    for (
-      let day = 1;
-      day < currentDay;
-      day++
-    ) {
-      const previousPlan =
-        studyPlan.dailyPlans.find(
-          (plan) => plan.day === day
-        )
-
-      if (!previousPlan) {
-        continue
-      }
-
-      previousPlan.topics.forEach(
-        (previousTopic) => {
-          // --------------------------------
-          // Check required activities
-          // --------------------------------
-
-          const coveredPending =
-            previousTopic.covered?.status !==
-            "completed"
-
-          const quizPending =
-            previousTopic.quiz?.status !==
-            "completed"
-
-          const mistakePending =
-            previousTopic.mistakeReview?.status ===
-            "pending"
-
-          const topicIncomplete =
-            coveredPending ||
-            quizPending ||
-            mistakePending
-
-          if (!topicIncomplete) {
-            return
-          }
-
-          // --------------------------------
-          // Don't duplicate today's topic
-          // --------------------------------
-
-          const topicId =
-            previousTopic.topicId?.toString()
-
-          if (
-            topicId &&
-            todayTopicIds.has(topicId)
-          ) {
-            return
-          }
-
-          // --------------------------------
-          // Don't add same topic twice
-          // --------------------------------
-
-          const alreadyAdded =
-            carryForwardTopics.some(
-              (topic) =>
-                topic.topicId?.toString() ===
-                topicId
-            )
-
-          if (alreadyAdded) {
-            return
-          }
-
-          // --------------------------------
-          // Add a copy
-          // --------------------------------
-
-          carryForwardTopics.push(
-            previousTopic.toObject
-              ? previousTopic.toObject()
-              : previousTopic
-          )
-        }
-      )
-    }
-
-    // ========================================
-    // EFFECTIVE TODAY TOPICS
-    // ========================================
-    //
-    // Carry-forward first.
-    // Today's new topics second.
-    // ========================================
-
-    const effectiveTopics = [
-      ...carryForwardTopics,
-      ...todayPlan.topics,
-    ]
-
-    // ========================================
-    // Calculate progress
-    // ========================================
+    // --------------------------------
+    // Calculate topic progress
+    // --------------------------------
 
     const totalTopics =
-      effectiveTopics.length
+      topics.length
 
-    let completedTopics = 0
-
-    effectiveTopics.forEach(
-      (topic) => {
-        if (topic.completed) {
-          completedTopics++
-        }
-      }
-    )
+    const completedTopics =
+      topics.filter(
+        (topic) =>
+          topic.completed
+      ).length
 
     const progress =
       totalTopics > 0
@@ -1063,95 +955,128 @@ const getTodayPlan = async (req, res) => {
           )
         : 0
 
-    // ========================================
-    // Required activities
-    // ========================================
+    // --------------------------------
+    // Find remaining REQUIRED activities
+    // --------------------------------
 
     const remainingActivities = []
 
-    effectiveTopics.forEach(
-      (topic) => {
-        // -------------------------------
-        // Covered — REQUIRED
-        // -------------------------------
+    topics.forEach((topic) => {
+      // --------------------------------
+      // Covered — REQUIRED
+      // --------------------------------
 
-        if (
-          topic.covered?.status !==
-          "completed"
-        ) {
-          remainingActivities.push({
-            topicId:
-              topic.topicId,
+      if (
+        topic.covered?.status !==
+        "completed"
+      ) {
+        remainingActivities.push({
+          topicId:
+            topic.topicId,
 
-            topic:
-              topic.name,
+          topic:
+            topic.name,
 
-            activity:
-              "covered",
-          })
-        }
-
-        // -------------------------------
-        // Quiz — REQUIRED
-        // -------------------------------
-
-        if (
-          topic.quiz?.status !==
-          "completed"
-        ) {
-          remainingActivities.push({
-            topicId:
-              topic.topicId,
-
-            topic:
-              topic.name,
-
-            activity:
-              "quiz",
-          })
-        }
-
-        // -------------------------------
-        // Mistake Review
-        // REQUIRED only when pending
-        // -------------------------------
-
-        if (
-          topic.mistakeReview?.status ===
-          "pending"
-        ) {
-          remainingActivities.push({
-            topicId:
-              topic.topicId,
-
-            topic:
-              topic.name,
-
-            activity:
-              "mistakeReview",
-          })
-        }
+          activity:
+            "covered",
+        })
       }
-    )
 
-    // ========================================
-    // Remaining days
-    // ========================================
+      // --------------------------------
+      // Quiz — REQUIRED
+      // --------------------------------
+
+      if (
+        topic.quiz?.status !==
+        "completed"
+      ) {
+        remainingActivities.push({
+          topicId:
+            topic.topicId,
+
+          topic:
+            topic.name,
+
+          activity:
+            "quiz",
+        })
+      }
+
+      // --------------------------------
+      // Mistake Review
+      // REQUIRED only when pending
+      // --------------------------------
+
+      if (
+        topic.mistakeReview?.status ===
+        "pending"
+      ) {
+        remainingActivities.push({
+          topicId:
+            topic.topicId,
+
+          topic:
+            topic.name,
+
+          activity:
+            "mistakeReview",
+        })
+      }
+    })
+
+    // --------------------------------
+    // Remaining study days
+    // --------------------------------
 
     const daysLeft =
-      totalDays - currentDay
+      Math.max(
+        totalDays - currentDay,
+        0
+      )
 
-    // ========================================
-    // Day can be completed only when ALL
-    // required activities are complete
-    // ========================================
+    // --------------------------------
+    // Can complete day?
+    // --------------------------------
 
     const canCompleteDay =
       remainingActivities.length === 0
 
-    // ========================================
-    // Return effective today's plan
-    // ========================================
+    // --------------------------------
+    // Determine goal
+    // --------------------------------
+
+    let goal =
+      "Complete today's study tasks."
+
+    if (
+      todayPlan.phase ===
+      "Learning"
+    ) {
+      goal =
+        "Learn today's topics and complete the required activities."
+    } else if (
+      todayPlan.phase ===
+      "Revision"
+    ) {
+      goal =
+        "Revise previously learned topics and strengthen weak areas."
+    } else if (
+      todayPlan.phase ===
+      "Practice"
+    ) {
+      goal =
+        "Practice your knowledge and analyze your mistakes."
+    } else if (
+      todayPlan.phase ===
+      "Final Revision"
+    ) {
+      goal =
+        "Complete your final revision and focus on weak areas."
+    }
+
+    // --------------------------------
+    // Return today's plan
+    // --------------------------------
 
     return res.status(200).json({
       currentDay,
@@ -1166,10 +1091,7 @@ const getTodayPlan = async (req, res) => {
       date:
         todayPlan.date,
 
-      // Effective topics include
-      // carry-forward work.
-      topics:
-        effectiveTopics,
+      topics,
 
       tasks:
         todayPlan.tasks || [],
@@ -1189,20 +1111,6 @@ const getTodayPlan = async (req, res) => {
 
       totalTopics,
 
-      carryForwardCount:
-        carryForwardTopics.length,
-
-      carryForwardTopics:
-        carryForwardTopics.map(
-          (topic) => ({
-            topicId:
-              topic.topicId,
-
-            topic:
-              topic.name,
-          })
-        ),
-
       remainingActivities,
 
       canCompleteDay,
@@ -1211,20 +1119,7 @@ const getTodayPlan = async (req, res) => {
         title:
           `Study Day ${currentDay}`,
 
-        goal:
-          todayPlan.phase ===
-          "Learning"
-            ? "Learn today's topics and complete required activities."
-            : todayPlan.phase ===
-              "Revision"
-            ? "Revise weak and previously learned topics."
-            : todayPlan.phase ===
-              "Practice"
-            ? "Practice and test your knowledge."
-            : todayPlan.phase ===
-              "Final Revision"
-            ? "Complete your final revision."
-            : "Complete today's study tasks.",
+        goal,
       },
     })
   } catch (error) {
@@ -1239,7 +1134,6 @@ const getTodayPlan = async (req, res) => {
     })
   }
 }
-
 // ===============================
 // Complete Today's Plan
 // ===============================

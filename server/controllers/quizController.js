@@ -1,6 +1,7 @@
 const client = require("../ai/openrouter")
 const Mistake = require("../models/Mistake")
 const QuizAttempt = require("../models/QuizAttempt")
+const Syllabus = require("../models/Syllabus")
 
 const {
   getRecommendedDifficulty,
@@ -8,53 +9,108 @@ const {
 
 const generateQuiz = async (req, res) => {
   try {
-    const { topic} = req.body
-
-    // Get previous attempts for this topic
-const attempts = await QuizAttempt.find({
-  user: req.user._id,
-  topic: {
-    $regex: new RegExp("^" + topic + "$", "i"),
-  },
-})
-
-let averagePercentage = 0
-
-if (attempts.length > 0) {
-  const totalPercentage =
-    attempts.reduce(
-      (sum, attempt) =>
-        sum +
-        (attempt.score /
-          attempt.totalQuestions) *
-          100,
-      0
+    const { topic, topicId } = req.body
+//     console.log("Quiz request:", {
+//   topic,
+//   topicId,
+// })
+    const syllabus = await Syllabus.findOne({
+      user: req.user._id,
+    })
+     if (!syllabus) {
+      return res.status(404).json({
+        message: "Syllabus not found.",
+      })
+    }
+    const syllabusTopic =
+  syllabus.subjects
+    .flatMap((subject) => subject.units)
+    .flatMap((unit) => unit.topics)
+    .find(
+      (item) =>
+        item._id.toString() === topicId.toString()
     )
 
-  averagePercentage =
-    totalPercentage / attempts.length
+if (!syllabusTopic) {
+  return res.status(404).json({
+    message:
+      "The selected topic was not found in your syllabus.",
+  })
 }
+ const subtopics =
+  syllabusTopic.subtopics?.map(
+    (subtopic) => subtopic.name
+  ) || []
 
-const difficulty =
-  getRecommendedDifficulty(
-    averagePercentage
-  )
+console.log("Quiz syllabus topic:", syllabusTopic.name)
+console.log("Quiz syllabus subtopics:", subtopics)
+
+    // Get previous attempts for this topic
+    const attempts = await QuizAttempt.find({
+      user: req.user._id,
+      topic: {
+        $regex: new RegExp(
+          "^" + topic + "$",
+          "i"
+        ),
+      },
+    })
+
+    let averagePercentage = 0
+
+    if (attempts.length > 0) {
+      const totalPercentage =
+        attempts.reduce(
+          (sum, attempt) =>
+            sum +
+            (attempt.score /
+              attempt.totalQuestions) *
+              100,
+          0
+        )
+
+      averagePercentage =
+        totalPercentage /
+        attempts.length
+    }
+
+    const difficulty =
+      getRecommendedDifficulty(
+        averagePercentage
+      )
 
     const completion =
-      await client.chat.completions.create({
-        model: "openai/gpt-3.5-turbo",
+  await client.chat.completions.create({
+    model: "openrouter/free",
 
-        messages: [
-          {
-            role: "user",
-            content: `
-Generate 5 MCQs on ${topic}.
+    messages: [
+      {
+        role: "user",
+       content: `
+You are generating a quiz strictly from a student's uploaded syllabus.
 
-Difficulty: ${difficulty}
+Subject topic:
+${syllabusTopic.name}
 
-Return ONLY valid JSON.
+Allowed syllabus subtopics:
+${subtopics.join(", ")}
 
-Format:
+Generate exactly 5 multiple-choice questions.
+
+IMPORTANT RULES:
+
+1. Questions MUST be based only on the topic and subtopics listed above.
+2. Do NOT use information from outside these syllabus topics.
+3. Do NOT introduce another programming language or unrelated concepts.
+4. If the topic is OOPS Concept, questions must be about the listed OOPS subtopics.
+5. Difficulty: ${difficulty}
+6. Make the questions educational and directly relevant to the syllabus.
+7. Each question must have exactly 4 options.
+8. There must be exactly one correct answer.
+9. Return ONLY valid JSON.
+10. Do not use markdown or code fences.
+
+Required format:
 
 [
   {
@@ -69,25 +125,53 @@ Format:
   }
 ]
 `,
-          },
-        ],
-      })
+      },
+    ],
 
-   const quizText =
-  completion.choices[0].message.content
+    temperature: 0.3,
 
-const quiz = JSON.parse(quizText)
+    max_tokens: 3000,
 
-  res.status(200).json({
-    difficulty,
-    quiz,
+    extra_body: {
+      models: [
+        "openrouter/free",
+        // fallback models will go here
+      ],
+    },
   })
 
-  } catch (error) {
-    console.log(error)
+    let quizText =
+      completion.choices?.[0]?.message?.content
 
-    res.status(500).json({
-      message: error.message,
+    if (!quizText) {
+      return res.status(502).json({
+        message:
+          "AI did not return quiz content.",
+      })
+    }
+
+    // Remove possible markdown fences
+    quizText = quizText
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim()
+
+    const quiz =
+      JSON.parse(quizText)
+
+    return res.status(200).json({
+      difficulty,
+      quiz,
+    })
+  } catch (error) {
+    console.error(
+      "Generate Quiz Error:",
+      error
+    )
+
+    return res.status(500).json({
+      message:
+        error.message,
     })
   }
 }

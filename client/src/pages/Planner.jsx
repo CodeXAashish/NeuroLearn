@@ -25,11 +25,11 @@ const [planningDays, setPlanningDays] = useState(45)
 const [customDays, setCustomDays] = useState("")
 
   // Planner States
-  const [todayPlan, setTodayPlan] = useState(null)
-  const [topics, setTopics] = useState([])
-  const [selectedTopic, setSelectedTopic] = useState("")
-  const [loading, setLoading] = useState(false)
-
+ const [todayPlan, setTodayPlan] = useState(null)
+const [topics, setTopics] = useState([])
+const [selectedTopic, setSelectedTopic] = useState("")
+const [selectedTopicId, setSelectedTopicId] = useState("")
+const [loading, setLoading] = useState(false)
 
   // Load Today's Study Plan
   const loadTodayPlan = async () => {
@@ -38,23 +38,14 @@ const [customDays, setCustomDays] = useState("")
 
       setTodayPlan(data)
 
-      // Extract topics from AI response
-      const lines = data.plan.split("\n")
+  // Use structured topics from backend
+const extractedTopics = Array.isArray(data.topics)
+  ? data.topics
+  : []
 
-      const topicIndex = lines.findIndex((line) =>
-        line.includes("Today's Topics")
-      )
+  console.log("Planner topics:", extractedTopics)
 
-      if (topicIndex !== -1) {
-        const extractedTopics = lines
-          .slice(topicIndex + 1)
-          .filter((line) => line.trim().startsWith("-"))
-          .map((line) =>
-            line.replace("-", "").trim()
-          )
-
-        setTopics(extractedTopics)
-      }
+setTopics(extractedTopics)
     } catch (error) {
       console.log(error)
     }
@@ -256,8 +247,11 @@ const [customDays, setCustomDays] = useState("")
     )
   }
 }
-const lines = todayPlan.plan.split("\n")
+const planText = todayPlan.plan?.goal || ""
 
+const lines = planText
+  ? planText.split("\n")
+  : []
 let difficulty = ""
 let weakTopics = ""
 
@@ -415,15 +409,15 @@ lines.forEach((line) => {
     </h3>
 
     <ul className="space-y-3">
-      {topics.map((topic, index) => (
-        <li
-          key={index}
-          className="bg-zinc-900 rounded-lg p-3"
-        >
-          {topic}
-        </li>
-      ))}
-    </ul>
+  {topics.map((topic) => (
+    <li
+      key={topic.topicId}
+      className="bg-zinc-900 rounded-lg p-3"
+    >
+      {topic.name}
+    </li>
+  ))}
+</ul>
   </div>
 
   {/* Difficulty */}
@@ -488,26 +482,50 @@ active:scale-95
 
         <div className="grid gap-4 md:grid-cols-2">
   {topics.length > 0 ? (
-    topics.map((topic) => (
-      <button
-        key={topic}
-        onClick={() => setSelectedTopic(topic)}
-        className={`rounded-xl border p-4 text-left transition-all duration-200 ${
-          selectedTopic === topic
-            ? "border-blue-500 bg-blue-600/20 shadow-lg"
-            : "border-zinc-700 bg-zinc-800 hover:border-blue-400 hover:-translate-y-1"
-        }`}
-      >
-        <h3 className="font-semibold text-lg">
-          📚 {topic}
-        </h3>
+   topics.map((topic) => (
+  <button
+    key={topic.topicId}
+    onClick={() => {
+      setSelectedTopic(topic.name)
+      setSelectedTopicId(topic.topicId)
+    }}
+    className={`rounded-xl border p-4 text-left transition-all duration-200 ${
+      selectedTopic === topic.name
+        ? "border-blue-500 bg-blue-600/20 shadow-lg"
+        : "border-zinc-700 bg-zinc-800 hover:border-blue-400 hover:-translate-y-1"
+    }`}
+  >
+   <div>
+  <h3 className="font-semibold text-lg">
+    📚 {topic.name}
+  </h3>
 
-        <p className="text-sm text-zinc-400 mt-2">
-          Click to generate a quiz for this topic.
-        </p>
-      </button>
-    ))
-  ) : (
+  {topic.subtopics?.length > 0 && (
+    <div className="mt-3">
+      <p className="text-sm font-medium text-zinc-400 mb-2">
+        Today's Subtopics:
+      </p>
+
+      <ul className="space-y-1">
+        {topic.subtopics.map((subtopic) => (
+          <li
+            key={subtopic.subtopicId}
+            className="text-sm text-zinc-300"
+          >
+            • {subtopic.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  <p className="text-sm text-zinc-500 mt-3">
+    Click to generate a quiz for this topic.
+  </p>
+</div>
+  </button>
+))
+): (
     <p className="text-gray-400">
       No topics detected.
     </p>
@@ -528,21 +546,26 @@ active:scale-95
     type="text"
     placeholder="Enter another topic..."
     value={selectedTopic}
-    onChange={(e) => setSelectedTopic(e.target.value)}
+   onChange={(e) => {
+  setSelectedTopic(e.target.value)
+  setSelectedTopicId("")
+}}
     className="w-full rounded-xl border border-zinc-700 bg-zinc-800 p-4 focus:border-blue-500 focus:outline-none mb-5"
   />
 
   <button
     disabled={!selectedTopic}
     onClick={() =>
-      navigate("/quiz", {
-        state: {
-          topic: selectedTopic,
-          difficulty,
-          source: "planner",
-        },
-      })
-    }
+     navigate("/quiz", {
+  state: {
+    topic: selectedTopic,
+        topicId: selectedTopicId,
+    difficulty,
+    source: "planner",
+  },
+ })
+}
+    
     className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-4 text-lg font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
   >
     🚀 Generate AI Quiz

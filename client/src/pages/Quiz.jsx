@@ -15,6 +15,7 @@ function Quiz() {
   const location = useLocation()
 
   const [topic, setTopic] = useState("")
+  const [topicId, setTopicId] = useState("")
   const [difficulty, setDifficulty] = useState("easy")
 
   const [quiz, setQuiz] = useState([])
@@ -30,19 +31,23 @@ function Quiz() {
   const [countdown, setCountdown] = useState(5)
 
   // Automatically fill topic if coming from Planner
-  useEffect(() => {
+ useEffect(() => {
   if (location.state?.topic) {
     const selectedTopic = location.state.topic
 
-    const selectedDifficulty =
-      location.state.difficulty || "easy"
+    const selectedTopicId = location.state.topicId || ""
+
+    const selectedDifficulty = location.state.difficulty || "easy"
 
     setTopic(selectedTopic)
+
+    setTopicId(selectedTopicId)
 
     setDifficulty(selectedDifficulty)
 
     generateQuizAutomatically(
       selectedTopic,
+      selectedTopicId,
       selectedDifficulty
     )
   }
@@ -65,13 +70,18 @@ useEffect(() => {
 
   const generateQuizAutomatically = async (
   selectedTopic,
+  selectedTopicId,
   selectedDifficulty
 ) => {
   try {
     setLoading(true)
 
+    console.log("Quiz topic:", selectedTopic)
+console.log("Quiz topicId:", selectedTopicId)
+
     const data = await generateQuiz({
       topic: selectedTopic,
+      topicId: selectedTopicId,
       difficulty: selectedDifficulty,
     })
 
@@ -93,8 +103,12 @@ useEffect(() => {
 
         const data = await generateQuiz({
             topic,
+            topicId,
             difficulty,
           })
+          console.log("Quiz topic:", topic)
+console.log("Quiz topicId:", topicId)
+
 
         setQuiz(data.quiz)
         setAnswers({})
@@ -121,8 +135,8 @@ useEffect(() => {
 const data = await submitQuiz(payload);
      setResult(data)
     await updateTopicActivity({
-    topic,
-    activity: "quizCompleted",
+    topicId,
+    activity: "quiz",
 })
 
 setCountdown(5);
