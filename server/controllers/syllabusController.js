@@ -35,6 +35,11 @@ const uploadSyllabus = async (req, res) => {
     const text =
       pdfData.text?.trim()
 
+      console.log(
+  "EXTRACTED SYLLABUS TEXT:\n",
+  text
+)
+
     if (!text) {
       return res.status(400).json({
         message:
@@ -70,15 +75,19 @@ Subject
 Rules:
 
 1. Preserve the original syllabus terminology.
-2. Do not invent subjects, units, topics, or subtopics.
-3. Do not add explanations.
-4. Do not create a study plan.
-5. Do not assign days.
-6. Do not estimate study time.
-7. Keep every important syllabus item.
-8. If several concepts appear in one topic, split them into subtopics.
-9. Preserve the original order.
-10. Return ONLY valid JSON.
+2. Do not invent subjects, units, topics, subtopics, or content.
+3. Extract content ONLY from the supplied syllabus.
+4. For every subtopic, include the relevant syllabus text that describes or belongs to that subtopic.
+5. Do not add explanations from general knowledge.
+6. Do not add information that is not present in the syllabus.
+7. Do not create a study plan.
+8. Do not assign days.
+9. Do not estimate study time.
+10. Keep every important syllabus item.
+11. If several concepts appear in one topic, split them into subtopics when the syllabus supports that separation.
+12. Preserve the original order.
+13. If the syllabus only provides a subtopic name and provides no explanatory content for it, set content to an empty string.
+14. Return ONLY valid JSON.
 
 Required JSON structure:
 
@@ -93,10 +102,11 @@ Required JSON structure:
             {
               "name": "Topic name",
               "subtopics": [
-                {
-                  "name": "Subtopic name"
-                }
-              ]
+  {
+    "name": "Subtopic name",
+    "content": "Relevant content from the syllabus for this subtopic"
+  }
+]
             }
           ]
         }
@@ -236,6 +246,11 @@ ${syllabusText}
                                               subtopic.name ||
                                                 ""
                                             ).trim(),
+
+                                              content:
+                                                String(
+                                                  subtopic.content || ""
+                                                ).trim(),
 
                                           completed:
                                             false,

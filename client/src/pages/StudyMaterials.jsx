@@ -77,23 +77,32 @@ function StudyMaterials() {
 
       {syllabuses.map((syllabus) => {
 
-        const totalTopics =
-          syllabus.subjects.reduce(
-            (acc, subject) =>
-              acc + subject.topics.length,
-            0
-          )
+       const totalTopics =
+  syllabus.subjects.reduce(
+    (acc, subject) =>
+      acc +
+      subject.units.reduce(
+        (unitAcc, unit) =>
+          unitAcc + unit.topics.length,
+        0
+      ),
+    0
+  )
 
-        const completedTopics =
-          syllabus.subjects.reduce(
-            (acc, subject) =>
-              acc +
-              subject.topics.filter(
-                topic => topic.completed
-              ).length,
-            0
-          )
-
+const completedTopics =
+  syllabus.subjects.reduce(
+    (acc, subject) =>
+      acc +
+      subject.units.reduce(
+        (unitAcc, unit) =>
+          unitAcc +
+          unit.topics.filter(
+            topic => topic.completed
+          ).length,
+        0
+      ),
+    0
+  )
         const progress =
           totalTopics === 0
             ? 0

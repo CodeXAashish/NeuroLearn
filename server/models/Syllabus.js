@@ -10,6 +10,11 @@ const subtopicSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+   content: {
+    type: String,
+    default: "",
+  },
+
 
   completed: {
     type: Boolean,

@@ -16,6 +16,7 @@ function Quiz() {
 
   const [topic, setTopic] = useState("")
   const [topicId, setTopicId] = useState("")
+  const [subtopic, setSubtopic] = useState("")
   const [difficulty, setDifficulty] = useState("easy")
 
   const [quiz, setQuiz] = useState([])
@@ -31,23 +32,31 @@ function Quiz() {
   const [countdown, setCountdown] = useState(5)
 
   // Automatically fill topic if coming from Planner
- useEffect(() => {
+useEffect(() => {
   if (location.state?.topic) {
     const selectedTopic = location.state.topic
 
-    const selectedTopicId = location.state.topicId || ""
+    const selectedTopicId =
+      location.state.topicId || ""
 
-    const selectedDifficulty = location.state.difficulty || "easy"
+    const selectedSubtopic =
+      location.state.subtopic || ""
+
+    const selectedDifficulty =
+      location.state.difficulty || "easy"
 
     setTopic(selectedTopic)
 
     setTopicId(selectedTopicId)
+
+    setSubtopic(selectedSubtopic)
 
     setDifficulty(selectedDifficulty)
 
     generateQuizAutomatically(
       selectedTopic,
       selectedTopicId,
+      selectedSubtopic,
       selectedDifficulty
     )
   }
@@ -71,17 +80,20 @@ useEffect(() => {
   const generateQuizAutomatically = async (
   selectedTopic,
   selectedTopicId,
+  selectedSubtopic,
   selectedDifficulty
 ) => {
   try {
     setLoading(true)
 
-    console.log("Quiz topic:", selectedTopic)
-console.log("Quiz topicId:", selectedTopicId)
+   console.log("Quiz topic:", selectedTopic)
+   console.log("Quiz topicId:", selectedTopicId)
+   console.log("Quiz subtopic:", selectedSubtopic)
 
     const data = await generateQuiz({
       topic: selectedTopic,
       topicId: selectedTopicId,
+      subtopic: selectedSubtopic,
       difficulty: selectedDifficulty,
     })
 

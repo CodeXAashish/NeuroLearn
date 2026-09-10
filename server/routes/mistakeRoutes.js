@@ -6,10 +6,12 @@ const {
   getMistakes,
   resolveMistake,
   explainMistake,
+  hasUnresolvedMistakes,
 } = require("../controllers/mistakeController");
 
 const { protect } = require("../middleware/authMiddleware");
 router.get("/", protect, getMistakes);
+router.get("/has-unresolved", protect, hasUnresolvedMistakes)
 router.post("/", saveMistake);
 router.put("/:id/resolve", protect, resolveMistake);
 router.post("/explain", protect, explainMistake);

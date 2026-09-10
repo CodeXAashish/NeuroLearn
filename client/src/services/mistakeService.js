@@ -21,6 +21,15 @@ export const getMistakes = async () => {
   return response.data;
 };
 
+export const hasUnresolvedMistakes = async () => {
+  const response = await axios.get(
+    `${API_URL}/has-unresolved`,
+    getAuthConfig()
+  )
+
+  return response.data
+}
+
 export const resolveMistake = async (id) => {
   const response = await axios.put(
     `${API_URL}/${id}/resolve`,

@@ -29,6 +29,7 @@ const [customDays, setCustomDays] = useState("")
 const [topics, setTopics] = useState([])
 const [selectedTopic, setSelectedTopic] = useState("")
 const [selectedTopicId, setSelectedTopicId] = useState("")
+const [selectedSubtopic, setSelectedSubtopic] = useState("")
 const [loading, setLoading] = useState(false)
 
   // Load Today's Study Plan
@@ -522,6 +523,35 @@ active:scale-95
   <p className="text-sm text-zinc-500 mt-3">
     Click to generate a quiz for this topic.
   </p>
+
+  {selectedTopic === topic.name &&
+  topic.subtopics?.length > 0 && (
+    <div className="mt-4">
+      <p className="mb-2 text-sm font-semibold text-cyan-400">
+        What did you just study?
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {topic.subtopics.map((subtopic) => (
+          <button
+            key={subtopic.name}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelectedSubtopic(subtopic.name)
+            }}
+            className={`rounded-lg border px-3 py-2 text-sm transition ${
+              selectedSubtopic === subtopic.name
+                ? "border-cyan-400 bg-cyan-500/20 text-cyan-300"
+                : "border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-cyan-500"
+            }`}
+          >
+            {subtopic.name}
+          </button>
+        ))}
+      </div>
+    </div>
+)}
 </div>
   </button>
 ))
@@ -553,21 +583,21 @@ active:scale-95
     className="w-full rounded-xl border border-zinc-700 bg-zinc-800 p-4 focus:border-blue-500 focus:outline-none mb-5"
   />
 
-  <button
-    disabled={!selectedTopic}
-    onClick={() =>
-     navigate("/quiz", {
-  state: {
-    topic: selectedTopic,
+ <button
+  disabled={!selectedTopic || !selectedTopicId || !selectedSubtopic}
+  onClick={() =>
+    navigate("/quiz", {
+      state: {
+        topic: selectedTopic,
         topicId: selectedTopicId,
-    difficulty,
-    source: "planner",
-  },
- })
-}
-    
-    className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-4 text-lg font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-  >
+        subtopic: selectedSubtopic,
+        difficulty,
+        source: "planner",
+      },
+    })
+  }
+  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 py-4 text-lg font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+>
     🚀 Generate AI Quiz
   </button>
 

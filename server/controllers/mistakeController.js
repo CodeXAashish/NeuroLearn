@@ -43,6 +43,29 @@ const getMistakes = async (req, res) => {
     });
   }
 };
+
+const hasUnresolvedMistakes = async (req, res) => {
+  try {
+    const mistake = await Mistake.findOne({
+      user: req.user.id,
+      resolved: false,
+    }).select("_id")
+
+    return res.status(200).json({
+      hasMistakes: !!mistake,
+    })
+  } catch (error) {
+    console.error(
+      "Check Unresolved Mistakes Error:",
+      error
+    )
+
+    return res.status(500).json({
+      message: error.message,
+    })
+  }
+}
+
 const resolveMistake = async (req, res) => {
   try {
     const mistake = await Mistake.findOne({
@@ -72,50 +95,96 @@ const resolveMistake = async (req, res) => {
 };
 const explainMistake = async (req, res) => {
   try {
-    const { question, userAnswer, correctAnswer } = req.body;
+    const {
+      question,
+      userAnswer,
+      correctAnswer,
+    } = req.body
+
+    if (!question || !correctAnswer) {
+      return res.status(400).json({
+        message:
+          "Question and correct answer are required.",
+      })
+    }
 
     const prompt = `
-You are an expert tutor.
+You are an expert AI tutor helping a student understand their mistake.
 
 Question:
 ${question}
 
 Student's Answer:
-${userAnswer}
+${userAnswer || "No answer provided"}
 
 Correct Answer:
 ${correctAnswer}
 
-Explain:
-1. Why the student's answer is incorrect.
+Explain the mistake clearly and simply.
+
+Your response must include:
+
+1. Why the student's answer is wrong.
 2. Why the correct answer is correct.
-3. Give a simple explanation.
-4. Give one memory tip to avoid this mistake.
-`;
+3. A simple explanation of the concept.
+4. One small example if useful.
+5. One memory tip to avoid this mistake again.
 
-    const completion = await client.chat.completions.create({
-      model: "openai/gpt-3.5-turbo",
-      messages: [
-        {
-          role: "user",
-          content: prompt,
+Keep the explanation concise and beginner-friendly.
+Do not use unnecessary technical jargon.
+`
+
+    const completion =
+      await client.chat.completions.create({
+        model: "openrouter/free",
+
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+
+        temperature: 0.3,
+
+        max_tokens: 1000,
+
+        extra_body: {
+          models: [
+            "openrouter/free",
+          ],
         },
-      ],
-    });
+      })
 
-    res.status(200).json({
-      explanation: completion.choices[0].message.content,
-    });
+    const explanation =
+      completion.choices?.[0]?.message?.content
+
+    if (!explanation) {
+      return res.status(502).json({
+        message:
+          "AI did not return an explanation.",
+      })
+    }
+
+    return res.status(200).json({
+      explanation,
+    })
   } catch (error) {
-    res.status(500).json({
+    console.error(
+      "Explain Mistake Error:",
+      error
+    )
+
+    return res.status(500).json({
       message: error.message,
-    });
+    })
   }
-};
+}
 
 module.exports = {
   saveMistake,
   getMistakes,
   resolveMistake,
   explainMistake,
+  hasUnresolvedMistakes,
 };

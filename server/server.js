@@ -41,6 +41,12 @@ app.use("/api/dashboard",dashboardRoutes)
 
 app.use("/api/chat/context", chatContextRoutes);
 
+app.get("/api/quiz-test", (req, res) => {
+  res.json({
+    message: "Quiz route area is working",
+  })
+})
+
 app.get("/", (req, res) => {
   res.send("NeuroLearn API Running...")
 })
