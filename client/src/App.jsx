@@ -90,7 +90,11 @@ function App() {
 />
 <Route
   path="/mistakes"
-  element={<MistakeReview />}
+   element={
+    <ProtectedRoute>
+      <MistakeReview />
+    </ProtectedRoute>
+  }
 />
   </Routes>
   )
